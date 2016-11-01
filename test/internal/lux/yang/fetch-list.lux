@@ -1,0 +1,15 @@
+[doc Test pioneer yang download]
+
+[include ../common.luxinc]
+
+[shell fetch-list]
+    -Error:.*
+    [invoke common-setup]
+    [invoke enter-ncs-config]
+    [progress fetching list]
+    !devices device nc0 pioneer yang fetch-list
+    ?message Marked 18 modules for download, skipped 0
+    ?admin@ncs\(config\)\#
+
+[cleanup]
+    [invoke common-cleanup]

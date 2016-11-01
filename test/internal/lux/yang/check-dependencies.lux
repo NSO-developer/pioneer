@@ -1,0 +1,20 @@
+[doc Test pioneer yang check-dependencies]
+
+[include ../common.luxinc]
+
+[shell check-dependencies]
+    -Error:.*
+    [invoke common-setup]
+
+    # TODO: write tests to verify how YANG files with errors in them behave
+    
+    [progress test with state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang check-dependencies yang-directory ../data/missing
+    ?1/1 checking test: missing
+    ?failure The set of 1 enabled yang files are missing 1 files
+    ?missing missing
+    ?admin@ncs\(config\)\#
+    
+[cleanup]
+    [invoke common-cleanup]

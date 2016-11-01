@@ -1,0 +1,36 @@
+[doc Test pioneer yang delete]
+
+[include ../common.luxinc]
+
+[shell delete]
+    -Error:.*
+    [invoke common-setup]
+
+    [progress test without state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang delete
+    ?error Failed to find source directory .*/nc0
+    [invoke exit-ncs-config]
+
+    [progress creating state]
+    !mkdir -p /tmp/download/nc0
+    ?SH-PROMPT
+    !touch /tmp/download/nc0/delete.yang
+    ?SH-PROMPT
+    
+    [progress test with state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang delete name-pattern *
+    ?success.*Deleting module delete
+    ?admin@ncs\(config\)\#
+
+[shell verify]
+    !test -f /tmp/download/nc0/delete.yang
+    ?SH-PROMPT
+    -==0==
+    !echo ==$$?==
+    ?==1==
+    ?SH-PROMPT
+    
+[cleanup]
+    [invoke common-cleanup]

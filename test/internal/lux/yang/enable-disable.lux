@@ -1,0 +1,55 @@
+[doc Test pioneer yang enable / disable]
+
+[include ../common.luxinc]
+
+[shell enable-disable]
+    -Error:.*
+    [invoke common-setup]
+
+    [progress test without state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang enable name-pattern disabled
+    ?error Failed to find source directory .*/nc0
+    !devices device nc0 pioneer yang disable name-pattern enabled
+    ?error Failed to find source directory .*/nc0
+    [invoke exit-ncs-config]
+    
+    [progress creating state]
+    !mkdir -p /tmp/download/nc0
+    !touch /tmp/download/nc0/disabled.yang.no
+    ?SH-PROMPT
+    !echo '{}' > /tmp/download/nc0/enabled.yang
+    ?SH-PROMPT
+    !touch /tmp/download/nc0/marked-enabled.yang.yes
+    ?SH-PROMPT
+    
+    [progress test with state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang enable name-pattern disabled
+    ?Enabling module disabled
+    ?admin@ncs\(config\)\#
+    !devices device nc0 pioneer yang disable name-pattern *enabled
+    ?Disabling module enabled
+    ?Disabling module marked-enabled
+    ?admin@ncs\(config\)\#
+
+[shell verify]
+    !ls -1 /tmp/download/nc0/*enabled* | sort
+    ??/enabled.yang.no
+    ??/marked-enabled.yang.no
+    ?SH-PROMPT
+
+[shell enable-disable]
+    !devices device nc0 pioneer yang enable name-pattern *enabled
+    ?Enabling module enabled
+    ?Enabling module marked-enabled
+    ?admin@ncs\(config\)\#
+
+[shell verify]
+    !ls -1 /tmp/download/nc0/*enabled* | sort
+    ??/enabled.yang
+    ??/marked-enabled.yang.yes
+    ?SH-PROMPT
+
+[cleanup]
+    [invoke common-cleanup]

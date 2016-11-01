@@ -1,0 +1,70 @@
+[doc Test pioneer yang build/install/uninstall]
+
+[include ../common.luxinc]
+
+[macro packages-reload ok error]
+    [progress reloading]
+    -$error
+    !exit
+    ?admin@ncs\#
+    !packages reload
+    ?$ok
+    ?admin@ncs\#
+    !config
+    ?admin@ncs\(config\)\#
+    -Error:.*
+[endmacro]
+
+[shell ncs]
+    -Error:.*
+    [invoke common-setup]
+    [invoke enter-ncs-config]
+
+    # Without this sleep the build timeout calls in the action code
+    # is not working properly.
+    [sleep 15]
+    [progress test without state]
+    !devices device nc0 pioneer yang build-netconf-ned
+    ?error Failed to find source directory .*/nc0
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer yang install
+    ?failure The package is not successfully built, installation canceled
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer yang uninstall
+    ?error No NED installed in.*
+    ?admin@ncs\(config\)\#
+    
+    [progress downloading yang]
+    !devices device nc0 pioneer yang download include-names "tailf-ned-dell-ftos"
+    ?Downloading module tailf-ned-dell-ftos.*succeeded
+    ?admin@ncs\(config\)\#
+    
+    [progress test with state]
+    [timeout 900000]
+
+    [progress building]
+    !devices device nc0 pioneer yang build-netconf-ned
+    ?Starting build of 1 YANG modules
+    ?Build complete.*
+    ?admin@ncs\(config\)\#
+    [timeout]
+
+    [progress installing]
+    !devices device nc0 pioneer yang install
+    ?success Installed -- now you need to: packages reload
+    ?admin@ncs\(config\)\#
+    [invoke packages-reload "package nc0" "Error:.*"]
+
+    # Without this sleep the build timeout calls in the action code
+    # is not working properly.
+    [sleep 15]
+    [progress uninstalling]
+    !devices device nc0 pioneer yang uninstall
+    ?success Old NED package moved to.*
+    ?admin@ncs\(config\)\#
+    [invoke packages-reload ".*" "package nc0"]
+
+[cleanup]
+    [invoke common-cleanup]

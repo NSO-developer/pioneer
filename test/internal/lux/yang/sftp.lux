@@ -1,0 +1,15 @@
+[doc Test pioneer yang sftp]
+
+[include ../common.luxinc]
+
+[shell ncs]
+    -Error:.*
+    [invoke common-setup]
+
+    [progress test]
+    [invoke enter-ncs-config]
+
+    # TODO:
+
+[cleanup]
+    [invoke common-cleanup]

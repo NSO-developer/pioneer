@@ -1,0 +1,8 @@
+module test {
+    namespace 'http://tail-f.com/test';
+    prefix test;
+
+    import missing {
+        prefix missing;
+    }
+}

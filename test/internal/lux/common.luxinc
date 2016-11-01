@@ -1,0 +1,156 @@
+[doc Common functionality for pioneer test]
+
+[macro ned-setup]
+    !NED_DIR=$PWD/../nc
+    ?SH-PROMPT
+    !rm -rf $$NED_DIR
+    ?SH-PROMPT
+    !test -d $$NED_DIR || ncs-make-package --netconf-ned $NCS_DIR/packages/neds/dell-ftos/src/yang nc --dest $$NED_DIR
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+    !test -f $$NED_DIR/src/yang/tail-fncs-ned.yang || cp $NCS_DIR/src/ncs/yang/tailf-ncs-ned.yang $$NED_DIR/src/yang
+    ?SH-PROMPT
+    !make -C $$NED_DIR/src 
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+[endmacro]
+
+[macro dir-setup]
+    !mkdir ncs-run
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+    !NCS_RUN=$PWD/ncs-run
+    ?SH-PROMPT
+    [invoke ned-setup]
+    !cd ncs-run
+    ?SH-PROMPT
+    !ncs-netsim create-network $$NED_DIR 1 nc
+    ?DEVICE nc0 CREATED
+    ?SH-PROMPT
+    !cp $$NED_DIR/src/yang/*.yang netsim/nc/nc0/
+    ?SH-PROMPT
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    !ncs-setup --netsim-dir ./netsim --dest .
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+    !mkdir packages/pioneer
+    ?SH-PROMPT
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    !cd ../../../../../
+    ?SH-PROMPT
+    !cp -Rv $(ls |grep -v test) $$NCS_RUN/packages/pioneer/
+    ?SH-PROMPT
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    !cd $$NCS_RUN
+    ?SH-PROMPT
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    !make -C packages/pioneer/src clean all
+    !cd ..
+    ?SH-PROMPT
+[endmacro]
+
+[macro dir-cleanup]
+    !rm -rf /tmp/download /tmp/packages ncs-run
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+[endmacro]
+
+[macro enter-ncs-config]
+    !ncs_cli -C -u admin
+    ?admin@ncs\#
+    !config
+    ?admin@ncs\(config\)\#
+[endmacro]
+
+[macro exit-ncs-config]
+    !exit
+    ?admin@ncs\#
+    !exit
+    ?SH-PROMPT
+[endmacro]
+
+[macro common-setup-authgroup]
+    [progress configuring authgroups]
+    [invoke enter-ncs-config]
+    !devices authgroups group default default-map remote-name admin remote-password admin
+    ?admin@ncs\(config-group-default\)\#
+    !commit
+    ?Commit complete.
+    !exit
+    ?admin@ncs\(config\)\#
+    [invoke exit-ncs-config]
+[endmacro]
+
+[macro common-setup-logging]
+    [progress configuring logging]
+    [invoke enter-ncs-config]
+    !python-vm logging level level-debug
+    ?admin@ncs\(config\)\#
+    !commit
+    ?Commit complete.
+    [invoke exit-ncs-config]
+[endmacro]
+
+[macro common-setup]
+    [invoke dir-cleanup]
+    [invoke dir-setup]
+
+    !cd ncs-run
+    ?SH-PROMPT
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    [progress starting netsim]
+    !ncs-netsim start
+    ?DEVICE nc0 OK STARTED
+    ?SH-PROMPT
+    [progress starting ncs]
+    [timeout 900000]
+    !ncs --with-package-reload
+    ?SH-PROMPT
+    [timeout]
+    !echo ==$?==
+    ?==0==
+    ?SH-PROMPT
+    !cd ..
+    ?SH-PROMPT
+
+    [invoke common-setup-authgroup]
+    [invoke common-setup-logging]
+[endmacro]
+
+[macro common-cleanup]
+    [progress stopping ncs]
+    [timeout 900000]
+    !ncs --stop
+    ?SH-PROMPT
+    [timeout]
+    [progress stopping netsim]
+    !cd ncs-run
+    ?SH-PROMPT
+    !ncs-netsim stop
+    ?DEVICE nc0.*STOPPED
+    ?SH-PROMPT
+    !cd ..
+    ?SH-PROMPT
+    [invoke dir-cleanup]
+[endmacro]
+

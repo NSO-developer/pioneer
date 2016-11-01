@@ -1,0 +1,17 @@
+[doc Test pioneer netconf get]
+
+[include ../common.luxinc]
+
+[shell hello]
+    -Error:.*
+    [invoke common-setup]
+
+    [progress get]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer netconf get
+    ?<rpc-reply
+    ?</rpc-reply>
+    ?admin@ncs\(config\)\#
+
+[cleanup]
+    [invoke common-cleanup]

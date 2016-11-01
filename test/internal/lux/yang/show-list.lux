@@ -1,0 +1,36 @@
+[doc Test pioneer yang show-list]
+
+[include ../common.luxinc]
+
+[shell show-list]
+    -Error:.*
+    [invoke common-setup]
+
+    [progress test without state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang show-list
+    ?error Failed to find source directory .*/nc0
+    [invoke exit-ncs-config]
+    
+    [progress creating state]
+    !mkdir -p /tmp/download/nc0
+    !touch /tmp/download/nc0/disabled.yang.no
+    ?SH-PROMPT
+    !touch /tmp/download/nc0/enabled.yang
+    ?SH-PROMPT
+    !touch /tmp/download/nc0/marked.yang.yes
+    ?SH-PROMPT
+    
+    [progress showing state]
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer yang show-list
+    ?enabled ===== ENABLED =====
+    ?enabled
+    ?disabled ===== DISABLED =====
+    ?disabled
+    ?marked ===== MARKED =====
+    ?marked
+    ?admin@ncs\(config\)\#
+
+[cleanup]
+    [invoke common-cleanup]

@@ -1,0 +1,501 @@
+module pioneer {
+  namespace "http://cisco.com/pioneer";
+  prefix pioneer;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description "A library of actions useful for adding and working with
+  NETCONF devices";
+
+  grouping action-output-common {
+    leaf message {
+      type string;
+    }
+    leaf error {
+      type string;
+    }
+    leaf success {
+      type string;
+    }
+    leaf failure {
+      type string;
+    }
+  }
+  grouping yang-directory {
+    leaf yang-directory {
+      tailf:info "Directory to use for the YANG files";
+      type string;
+    }
+  }
+  grouping ned-directory {
+    leaf ned-directory {
+      tailf:info "Directory to use for the NED files";
+      type string;
+    }
+  }
+  grouping name-pattern {
+    leaf name-pattern {
+      tailf:info "YANG module name matching pattern, for example 'ietf-*' matches 'ietf-yang-types'";
+      type string;
+    }
+  }
+
+  container pioneer {
+    container sftp {
+      leaf host {
+        tailf:info "sftp host address to use with the 'yang sftp' command.";
+        type string;
+      }
+      leaf port {
+        tailf:info "sftp host port to use with the 'yang sftp' command.";
+        type uint16;
+        default 22;
+      }
+      leaf username {
+        tailf:info "sftp host username to use with the 'yang sftp' command.";
+        type string;
+      }
+      leaf password {
+        tailf:info "sftp host password to use with the 'yang sftp' command.";
+        type string;
+      }
+      leaf rsa-key-path {
+        tailf:info "sftp private key file to use with the 'yang sftp' command.";
+        type string;
+        default "~/id_rsa";
+      }
+    }
+  }
+  
+  augment /ncs:devices/ncs:device {
+    container pioneer {
+      ////////////////////////////////////////////////////////////////
+      //// NETCONF
+      ////////////////////////////////////////////////////////////////
+      container netconf {
+        //////// netconf/hello ///////////////////////////////////////
+        tailf:action hello {
+          tailf:info "Send a NETCONF <hello> message to a device.";
+          tailf:actionpoint pioneer;
+          output {
+            uses action-output-common;
+            leaf hello-reply {
+              type string;
+            }
+          }
+        }
+        //////// netconf/get /////////////////////////////////////////
+        tailf:action get {
+          tailf:info "Send a NETCONF <get> message to a device. ";
+          tailf:actionpoint pioneer;
+          input {
+            leaf subtree {
+              tailf:info "Specify an XML subtree filter for the <get> operation";
+              type string;
+            }
+            leaf xpath {
+              tailf:info "Specify an XPATH filter for the <get> operation";
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+            leaf get-reply {
+              type string;
+            }
+          }
+        }
+        //////// netconf/get-config //////////////////////////////////
+        tailf:action get-config {
+          tailf:info "Send a NETCONF <get-config> message to a device. ";
+          tailf:actionpoint pioneer;
+          input {
+            leaf subtree {
+              tailf:info "Specify an XML subtree filter for the <get> operation";
+              type string;
+            }
+            leaf xpath {
+              tailf:info "Specify an XPATH filter for the <get> operation";
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+            leaf get-config-reply {
+              type string;
+            }
+          }
+        }
+      }
+      ////////////////////////////////////////////////////////////////
+      //// YANG
+      ////////////////////////////////////////////////////////////////
+      container yang {
+        //////// yang/fetch-list /////////////////////////////////////
+        tailf:action fetch-list {
+          tailf:info "Fetch the list of YANG modules supported by the device. "+
+            "Uses netconf-monitoring YANG module as well as the hello message "+
+            "to find out which modules are supported. "+
+            "After the list has been fetched, the modules may be donwloaded "+
+            "using the 'yang download' command.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+          }
+          output {
+            uses action-output-common;
+            uses yang-directory;
+          }
+        }
+        //////// yang/download ///////////////////////////////////////
+        tailf:action download {
+          tailf:info "Download the marked list of YANG modules from the device. "+
+            "Use the 'yang fetch-list' command to mark modules for download.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+            leaf include-names {
+              type string;
+            }
+            leaf include-names-in-file {
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+            uses yang-directory;
+          }
+        }
+        //////// yang/sftp ////////////////////////////////////////////
+        tailf:action sftp {
+          tailf:info "Download named YANG modules from an sftp server. "+
+            "Configure sftp host details in the 'sftp' container one level up." ;
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+            leaf remote-path {
+              type string;
+            }
+            leaf include-names {
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+            uses yang-directory;
+          }
+        }
+        //////// yang/show-list //////////////////////////////////////
+        tailf:action show-list {
+          tailf:info "Show the list of YANG modules in the YANG module directory for this device. "+
+            "Enabled and disabled YANG modules are listed under separate headings.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+          }
+          output {
+            uses action-output-common;
+            leaf enabled {
+              type string;
+            }          
+            leaf disabled {
+              type string;
+            }
+            leaf marked {
+              type string;
+            }
+          }
+        }
+        //////// yang/enable /////////////////////////////////////////
+        tailf:action enable {
+          tailf:info "Enable YANG modules from inclusion in a NETCONF NED build. "+
+            "YANG modules are enabled by default, so enabling is only required to "+
+            "reverse an earlier disable command.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+            uses name-pattern;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// yang/disable ////////////////////////////////////////
+        tailf:action disable {
+          tailf:info "Disable YANG modules from inclusion in a NETCONF NED build. "+
+            "If a YANG module causes a NETCONF NED build error, it may be useful "+
+            "to (temporarily) disable that module, and retry the build. "+
+            "Functionality in disabled YANG modules will not be accessible from NSO.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+            uses name-pattern;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// yang/delete /////////////////////////////////////////
+        tailf:action delete {
+          tailf:info "Delete enabled, disabled or marked YANG modules. "+
+            "This is useful to make pioneer download a new version of a YANG module.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+            uses name-pattern;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// yang/check-dependencies /////////////////////////////
+        tailf:action check-dependencies {
+          tailf:info "Check that all YANG modules imported/included by "+
+            "each enabled YANG module are available for the build.";
+          tailf:actionpoint pioneer;
+          input {
+            uses yang-directory;
+          }
+          output {
+            uses action-output-common;
+            leaf missing {
+              type string;
+            }
+          }
+        }
+        //////// yang/build-netconf-ned //////////////////////////////
+        tailf:action build-netconf-ned {
+          tailf:info "Build all enabled YANG YANG modules into a NETCONF NED. "+
+            "Before doing this, YANG modules need to be downloaded using the "+
+            "'yang download' or 'yang sftp' commands. It may be wise to also run "+
+            "'yang check-dependencies' before building. If a module causes the "+
+            "build to fail, it may be disabled using the 'yang disable' command. "+
+            "Once built, install the NED using the 'yang install-netconf-ned'.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf name {
+              type string;
+            }
+            uses yang-directory;
+            uses ned-directory;
+            leaf silence-timeout {
+              type uint32;
+              default 60;
+            }
+          }
+          output {
+            uses action-output-common;
+            uses ned-directory;
+          }
+        }
+        //////// yang/install-netconf-ned ////////////////////////////
+        tailf:action install-netconf-ned {
+          tailf:info "Install a built NETCONF NED in the running NSO system. "+
+            "Once installed, execute the NSO command 'packages reload' to "+
+            "make NSO load the installed packages. To remove an installed "+
+            "package, run 'yang uninstall-netconf-ned' followed by 'packages reload'. "+
+            "Only successfully built packages may be installed.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf name {
+              type string;
+            }
+            leaf nso-runtime-directory {
+              type string;
+            }
+            uses ned-directory;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// yang/uninstall-netconf-ned ////////////////////////////
+        tailf:action uninstall-netconf-ned {
+          tailf:info "Uninstall a NETCONF NED. "+
+            "You also need to run the NSO command 'packages reload' to make "+
+            "the change take effect in the running system.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf name {
+              type string;
+            }
+            leaf nso-runtime-directory {
+              type string;
+            }
+            uses ned-directory;
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+      }
+      ////////////////////////////////////////////////////////////////
+      //// CONFIG
+      ////////////////////////////////////////////////////////////////
+      container config {
+        //////// config/sync-from-into-file //////////////////////////
+        tailf:action sync-from-into-file {
+          tailf:info "Fetches the complete configuration from this device, "+
+            "similar to a 'sync-from' but stores the result in a file "+
+            "rather than the NSO database. This file may be edited and loaded "+
+            "manually using the NSO command 'load merge'.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf filename {
+              type string;
+            }
+            leaf as-template {
+              description "Make the resulting file a device template with the "+
+                "specified name.";
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/import-into-file /////////////////////////////
+        tailf:action import-into-file {
+          tailf:info "Imports a device configuration file for use with NSO, "+
+            "but stores the result in a file rather than the NSO database. "+
+            "This file may be edited and loaded manually using the NSO command "+
+            "'load merge'.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf source-filename {
+              mandatory true;
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+            leaf filename {
+              type string;
+            }
+          }
+        }
+        //////// config/record-state /////////////////////////////////
+        tailf:action record-state {
+          tailf:info "Save the current device configuration state in a file. "+
+            "A collection of saved state files can later be used with the "+
+            "'config explore-transitions' command.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf state-name {
+              mandatory true;
+              type string;
+            }
+            leaf including-rollbacks {
+              type uint32 {
+                range 0..25;
+              }
+              default 0;
+            }
+          }
+          output {
+            uses action-output-common;
+            leaf state-name {
+              type string;
+            }
+          }
+        }
+        //////// config/delete-state /////////////////////////////////
+        tailf:action delete-state {
+          tailf:info "Delete a saved state file. ";
+          tailf:actionpoint pioneer;
+          input {
+            leaf state-name {
+              mandatory true;
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/list-states //////////////////////////////////
+        tailf:action list-states {
+          tailf:info "List the saved states for this device.";
+          tailf:actionpoint pioneer;
+          input {
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/transition-to-state //////////////////////////
+        tailf:action transition-to-state {
+          tailf:actionpoint pioneer;
+          input {
+            leaf state-name {
+              type string;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+        //////// config/build-states /////////////////////////////////
+        tailf:action build-states {
+          tailf:actionpoint pioneer;
+          input {
+          }
+          output {
+            uses action-output-common;
+            leaf filename {
+              type string;
+            }
+          }
+        }
+        //////// config/explore-transitions //////////////////////////
+        tailf:action explore-transitions {
+          tailf:actionpoint pioneer;
+          input {
+            container stop-after {
+              tailf:info "Do not start more transitions after given time/coverage has been reached.";
+              choice unit-selection {
+                leaf seconds { type uint64; }
+                leaf minutes { type uint64; }
+                leaf hours   { type uint64; }
+                leaf days    { type uint64; }
+                leaf percent { type uint64; }
+                leaf cases   { type uint64; }
+              }                
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+      }
+      ////////////////////////////////////////////////////////////////
+      //// LOG
+      ////////////////////////////////////////////////////////////////
+      container log {
+        //////// log/print-netconf-trace //////////////////////////
+        tailf:action print-netconf-trace {
+          tailf:info "Prints netconf trace log for the current device.";
+          tailf:actionpoint pioneer;
+          input {
+            leaf max-age-s {
+              tailf:cli-drop-node-name;
+              tailf:info "Only display log entries more recent than "+
+                    "max-age-s seconds.";
+              type uint32;
+              default 120;
+            }
+          }
+          output {
+            uses action-output-common;
+          }
+        }
+      }
+    }
+  }
+}

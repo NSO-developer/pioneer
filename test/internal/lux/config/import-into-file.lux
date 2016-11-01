@@ -1,0 +1,12 @@
+[doc Test pioneer config import-info-file]
+
+[include ../common.luxinc]
+
+[shell import-into-file]    
+    -Error:.*
+#    [invoke common-setup]
+    !echo "Error: NOT IMPLEMENTED"
+    ?SH-PROMPT
+    
+[cleanup]
+#    [invoke common-cleanup]

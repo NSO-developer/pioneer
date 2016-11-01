@@ -1,0 +1,20 @@
+[doc Test pioneer config sync]
+
+[include ../common.luxinc]
+
+[shell sync-from-into-file]
+    -Error:.*
+    [invoke common-setup]
+
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer config sync-from-into-file filename nc0.xml
+    ?message
+    ?admin@ncs\(config\)\#
+
+[shell verify]
+    !grep nc0 ncs-run/nc0.xml
+    ?<name>nc0</name>
+    ?SH-PROMPT
+
+[cleanup]
+    [invoke common-cleanup]

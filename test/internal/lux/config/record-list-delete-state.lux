@@ -1,0 +1,55 @@
+[doc Test pioneer yang config record and yang config delete]
+
+[include ../common.luxinc]
+
+[shell record-delete]
+    -Error:.*
+    [invoke common-setup]
+
+    [invoke enter-ncs-config]
+    !devices device nc0 pioneer config record-state state-name empty
+    ??success Recorded states ['empty']
+    ?admin@ncs\(config\)\#
+    
+    !devices device nc0 sync-from
+    ?result true
+    ?admin@ncs\(config\)\#
+    
+    !devices device nc0 pioneer config record-state state-name initial
+    ??success Recorded states ['initial']
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 config force10:boot system gateway 127.0.0.1
+    ?admin@ncs\(config-config\)\#
+    !commit
+    ?Commit complete.
+    ?admin@ncs\(config-config\)\#
+    !exit
+    ?admin@ncs\(config-device-nc0\)\#
+    !exit
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer config record-state state-name configured
+    ??success Recorded states ['configured']
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer config list-states
+    ??success Saved device states: ['configured', 'empty', 'initial']
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer config delete-state state-name empty
+    ?success Deleted empty
+    ?admin@ncs\(config\)\#
+
+    !devices device nc0 pioneer config list-states
+    ??success Saved device states: ['configured', 'initial']
+    ?admin@ncs\(config\)\#
+
+[shell verify]
+    !ls -1 ncs-run/logs/nc0--*.cb | sort
+    ??ncs-run/logs/nc0--configured.state.cb
+    ??ncs-run/logs/nc0--initial.state.cb
+    ?SH-PROMPT
+    
+[cleanup]
+    [invoke common-cleanup]

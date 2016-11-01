@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+YANG_DIR="$1"
+NAME="$2"
+NED_DIR="$3"
+echo $NCS_DIR/bin/ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java
+$NCS_DIR/bin/ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java
+echo YANGERROR=10 make clean fxs -C "$3/src" NCSC="$NCS_DIR/bin/ncsc --verbose"
+YANGERROR=10 make clean fxs -C "$3/src" NCSC="$NCS_DIR/bin/ncsc --verbose" && touch "$NED_DIR"

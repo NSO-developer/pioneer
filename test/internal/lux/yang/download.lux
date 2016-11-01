@@ -1,0 +1,15 @@
+[doc Test pioneer yang download]
+
+[include ../common.luxinc]
+
+[shell download]
+    -Error:.*
+    [invoke common-setup]
+    [invoke enter-ncs-config]
+    [progress downloading yang]
+    !devices device nc0 pioneer yang download include-names "tailf-ned-dell-ftos"
+    ?Downloaded tailf-ned-dell-ftos
+    ?admin@ncs\(config\)\#
+
+[cleanup]
+    [invoke common-cleanup]

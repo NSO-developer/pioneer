@@ -1,0 +1,48 @@
+[doc Test pioneer config transition-to-state]
+
+[include ../common.luxinc]
+
+[shell transition-to-state]
+    -Error:.*
+    [invoke common-setup]
+
+    !echo \
+'devices { \
+    device nc0 { \
+        config { \
+            force10:boot { \
+                system { \
+                    gateway 127.0.0.1; \
+                } \
+            } \
+        } \
+    } \
+}' \
+>ncs-run/logs/nc0--state.state.cb
+    ?SH-PROMPT
+    !echo ==$$?==
+    ?==0==
+    ?SH-PROMPT
+
+    [invoke enter-ncs-config]
+    [progress sync-from]
+    !devices device nc0 sync-from
+    ?result true
+    ?admin@ncs\(config\)\#
+
+    [progress transition]
+    !devices device nc0 pioneer config transition-to-state state-name state
+    ?success Done
+    ?admin@ncs\(config\)\#
+
+    !show full-configuration devices device nc0 config force10:boot system gateway
+    ??force10:boot system gateway 127.0.0.1
+    ?admin@ncs\(config\)\#
+
+    [progress transition to missing state]
+    !devices device nc0 pioneer config transition-to-state state-name missing
+    ?error No such state: missing
+    ?admin@ncs\(config\)\#
+    
+[cleanup]
+    [invoke common-cleanup]

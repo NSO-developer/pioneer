@@ -1,0 +1,22 @@
+[doc Tests for issues found in the pioneer package]
+
+[include ../common.luxinc]
+
+[shell nso]
+    [invoke common-setup]
+
+[shell missing-default-map]
+    [invoke enter-ncs-config]
+
+    [progress missing default map]
+    !no devices authgroups group default default-map
+    ?admin@ncs\(config\)\#
+    !commit
+    ?Commit complete.
+    ?admin@ncs\(config\)\#
+    !devices device nc0 pioneer netconf hello
+    ?error required configuration in authentication group default default-map missing: remote-name, remote-password
+    ?admin@ncs\(config\)\#
+
+[cleanup]
+    [invoke common-cleanup]
