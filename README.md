@@ -23,10 +23,6 @@ transactionality properties.
 * The log tools allow reviewing the raw NETCONF communication between
 NSO and the device.
 
-* Finally, the ipython command allows the operator to switch from the
-NSO CLI into an ipython session with immediate maagic access to the
-current transaction.
-
 See usage examples below.
 
 # Documentation
@@ -43,7 +39,6 @@ important use cases may still work, but some tools will not.
 * NSO 4.1+
 * Python 2.7+ or 3+
 * Paramiko (SSH library for Python)
-* ipython
 * xsltproc
 * bash
 * pyang from NSO
@@ -52,8 +47,7 @@ You can paste this command into a terminal to quickly check that all
 dependencies are fulfilled:
 
     which ncs && which python && python -c "import paramiko" \
-    && which ipython && which xsltproc && which bash \
-    && which pyang && echo "All Fine"
+    && which xsltproc && which bash && which pyang && echo "All Fine"
 
 # Build instructions
 

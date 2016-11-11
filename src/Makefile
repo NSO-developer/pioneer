@@ -1,4 +1,4 @@
-all:	fxs py xsls clis
+all:	fxs py xsls
 
 # Include standard NCS examples build definitions and rules
 include $(NCS_DIR)/src/ncs/build/include.ncs.mk
@@ -6,7 +6,6 @@ include $(NCS_DIR)/src/ncs/build/include.ncs.mk
 SRC = $(wildcard yang/*.yang)
 FXS = $(SRC:yang/%.yang=../load-dir/%.fxs)
 XSLS = $(wildcard xsl/*.xsl)
-CLIS = $(wildcard cli/*.cli)
 
 fxs:	$(FXS)
 
@@ -22,11 +21,6 @@ py:
 	$(NCSC)  `ls $*-ann.yang  > /dev/null 2>&1 && echo "-a $*-ann.yang"` \
              $(YANGPATH) -c -o $@ $<
 	$(NCSC) --emit-python ../python/_namespaces/$(notdir $(basename $<)).py $@
-
-clis: $(CLIS:cli/%.cli=../load-dir/%.ccl)
-
-../load-dir/%.ccl:	cli/%.cli
-	$(NCSC) -c -o $@ $<
 
 clean:
 	rm -rf  ../load-dir/* ../python/_namespaces/*.py
