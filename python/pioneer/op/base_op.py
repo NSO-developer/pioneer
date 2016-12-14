@@ -13,7 +13,7 @@ import _ncs.maapi as maapi
 import _ncs.deprecated.maapi as dmaapi
 
 from ex import ActionError
-import pioneer_ns as ns
+import pioneer.namespaces.pioneer_ns as ns
 
 class BaseOp(object):
     ncs_dir = os.environ['NCS_DIR']
@@ -102,7 +102,7 @@ class BaseOp(object):
 
     def get_exe_path(self, exe):
         if exe == 'netconf-console':
-            path = os.path.join(self.pkg_root_dir, "python", "action", "netconf-console")
+            path = os.path.join(self.pkg_root_dir, "python", "pioneer", "netconf-console")
         else:
             path = self.get_exe_path_from_PATH(exe)
 

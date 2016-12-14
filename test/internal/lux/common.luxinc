@@ -1,6 +1,7 @@
 [doc Common functionality for pioneer test]
 
 [macro ned-setup]
+    [progress \nned-setup\n]
     !NED_DIR=$PWD/../nc
     ?SH-PROMPT
     !rm -rf $$NED_DIR
@@ -9,8 +10,16 @@
     ?SH-PROMPT
     !echo ==$$?==
     ?==0==
+    # tailf-ncs-ned must not be in the src/yang directory with NCS 4.1
+    # but is required by the netsim, work around this
     ?SH-PROMPT
-    !test -f $$NED_DIR/src/yang/tail-fncs-ned.yang || cp $NCS_DIR/src/ncs/yang/tailf-ncs-ned.yang $$NED_DIR/src/yang
+    !test -f $$NED_DIR/netsim/tail-fncs-ned.yang || cp $NCS_DIR/src/ncs/yang/tailf-ncs-ned.yang $$NED_DIR/netsim/
+    ?SH-PROMPT
+    !cp $$NED_DIR/src/yang/*.yang $$NED_DIR/netsim/
+    ?SH-PROMPT
+    !sed 's@FLAGS =.*@FLAGS = --yangpath .@' $$NED_DIR/netsim/Makefile > $$NED_DIR/netsim/Makefile.tmp
+    ?SH-PROMPT
+    !sed 's@../src/yang/@@g' $$NED_DIR/netsim/Makefile.tmp > $$NED_DIR/netsim/Makefile
     ?SH-PROMPT
     !make -C $$NED_DIR/src 
     ?SH-PROMPT
@@ -20,6 +29,7 @@
 [endmacro]
 
 [macro dir-setup]
+    [progress \ndir-setup\n]
     !mkdir ncs-run
     ?SH-PROMPT
     !echo ==$$?==
@@ -38,11 +48,13 @@
     !echo ==$?==
     ?==0==
     ?SH-PROMPT
+    [progress \nsetup netsim\n]
     !ncs-setup --netsim-dir ./netsim --dest .
     ?SH-PROMPT
     !echo ==$$?==
     ?==0==
     ?SH-PROMPT
+    [progress \nsetup pioneer\n]
     !mkdir packages/pioneer
     ?SH-PROMPT
     !echo ==$?==
@@ -88,7 +100,7 @@
 [endmacro]
 
 [macro common-setup-authgroup]
-    [progress configuring authgroups]
+    [progress \nconfiguring authgroups\n]
     [invoke enter-ncs-config]
     !devices authgroups group default default-map remote-name admin remote-password admin
     ?admin@ncs\(config-group-default\)\#
@@ -100,7 +112,7 @@
 [endmacro]
 
 [macro common-setup-logging]
-    [progress configuring logging]
+    [progress \nconfiguring logging\n]
     [invoke enter-ncs-config]
     !python-vm logging level level-debug
     ?admin@ncs\(config\)\#
@@ -118,12 +130,12 @@
     !echo ==$?==
     ?==0==
     ?SH-PROMPT
-    [progress starting netsim]
-    !ncs-netsim start
+    [progress \nstarting netsim\n]
+    !ncs-netsim restart
     ?DEVICE nc0 OK STARTED
     ?SH-PROMPT
-    [progress starting ncs]
-    [timeout 900000]
+    [progress \nstarting ncs\n]
+    [timeout 60]
     !ncs --with-package-reload
     ?SH-PROMPT
     [timeout]
@@ -138,16 +150,15 @@
 [endmacro]
 
 [macro common-cleanup]
-    [progress stopping ncs]
-    [timeout 900000]
+    [progress \nstopping ncs\n]
+    [timeout 60]
     !ncs --stop
     ?SH-PROMPT
     [timeout]
-    [progress stopping netsim]
+    [progress \nstopping netsim\n]
     !cd ncs-run
     ?SH-PROMPT
-    !ncs-netsim stop
-    ?DEVICE nc0.*STOPPED
+    !if test -d netsim; then ncs-netsim stop; fi
     ?SH-PROMPT
     !cd ..
     ?SH-PROMPT
