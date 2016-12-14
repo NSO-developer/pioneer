@@ -4,7 +4,7 @@
   <description>Your Swiss army knife for NETCONF, YANG and NSO NEDs</description>
   <ncs-min-version>4.1</ncs-min-version>
   <component>
-    <name>action</name>
+    <name>pioneer</name>
     <application>
       <python-class-name>Action</python-class-name>
     </application>

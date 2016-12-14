@@ -27,7 +27,7 @@ assert sys.version_info >= (2,7)
 import _ncs
 import _ncs.dp as dp
 import _ncs.maapi as maapi
-import pioneer_ns as ns
+import pioneer.namespaces.pioneer_ns as ns
 
 XT = _ncs.XmlTag
 V = _ncs.Value

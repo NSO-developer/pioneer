@@ -8,7 +8,7 @@ import _ncs.deprecated.maapi as dmaapi
 from ex import ActionError
 
 import base_op
-import pioneer_ns as ns
+import pioneer.namespaces.pioneer_ns as ns
 
 class NetconfOp(base_op.BaseOp):
     def get_conn_details(self):

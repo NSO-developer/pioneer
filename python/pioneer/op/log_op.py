@@ -3,7 +3,7 @@
 import os
 import time
 
-import pioneer_ns as ns
+import pioneer.namespaces.pioneer_ns as ns
 
 import base_op
 import netconf_trace

@@ -15,13 +15,13 @@ xsls: $(XSLS:xsl/%.xsl=../load-dir/%.xsl)
 	cp $< $@
 
 py:
-	PYTHONPATH=../python/_namespaces:$$PYTHONPATH python ../python/action/action.py
+	PYTHONPATH=../python:$$PYTHONPATH python ../python/pioneer/action.py
 
 ../load-dir/%.fxs:	yang/%.yang
 	$(NCSC)  `ls $*-ann.yang  > /dev/null 2>&1 && echo "-a $*-ann.yang"` \
              $(YANGPATH) -c -o $@ $<
-	$(NCSC) --emit-python ../python/_namespaces/$(notdir $(basename $<)).py $@
+	$(NCSC) --emit-python ../python/pioneer/namespaces/$(notdir $(basename $<)).py $@
 
 clean:
-	rm -rf  ../load-dir/* ../python/_namespaces/*.py
+	rm -rf  ../load-dir/* ../python/pioneer/namespaces/*.py
 	rm -rf  ./src/*/*.pyc

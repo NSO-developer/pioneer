@@ -12,7 +12,7 @@ import _ncs
 import _ncs.maapi as maapi
 
 import netconf_op
-import pioneer_ns as ns
+import pioneer.namespaces.pioneer_ns as ns
 
 from ex import ActionError
 
