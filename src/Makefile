@@ -21,6 +21,7 @@ py:
 	$(NCSC)  `ls $*-ann.yang  > /dev/null 2>&1 && echo "-a $*-ann.yang"` \
              $(YANGPATH) -c -o $@ $<
 	$(NCSC) --emit-python ../python/pioneer/namespaces/$(notdir $(basename $<)).py $@
+	test -f ../python/pioneer/namespaces/__init__.py || touch ../python/pioneer/namespaces/__init__.py
 
 clean:
 	rm -rf  ../load-dir/* ../python/pioneer/namespaces/*.py
