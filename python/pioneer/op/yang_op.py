@@ -357,7 +357,7 @@ class BuildNetconfNedOp(YangOp):
             return None
 
         build_output = self.proc_run([self.get_exe_path('bash'),
-                                      self.pkg_root_dir + "/python/action/ncs-make-package-verbose",
+                                      self.pkg_root_dir + "/python/pioneer/ncs-make-package-verbose",
                                       self.yang_directory, self.name, self.ned_directory],
                                      timeout=self.silence_timeout,
                                      outputfun=build_progress_fun)
