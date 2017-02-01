@@ -40,6 +40,7 @@ important use cases may still work, but some tools will not.
 * Python 2.7+ or 3+
 * Paramiko (SSH library for Python)
 * xsltproc
+* xmllint
 * bash
 * pyang from NSO
 
@@ -47,7 +48,8 @@ You can paste this command into a terminal to quickly check that all
 dependencies are fulfilled:
 
     which ncs && which python && python -c "import paramiko" \
-    && which xsltproc && which bash && which pyang && echo "All Fine"
+    && which xsltproc && which xmllint && which bash && which pyang \
+    && echo "All Fine"
 
 # Build instructions
 
