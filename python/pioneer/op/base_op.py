@@ -101,11 +101,7 @@ class BaseOp(object):
         maapi.cli_write(self.msocket, self.uinfo.usid, msg)
 
     def get_exe_path(self, exe):
-        if exe == 'netconf-console':
-            path = os.path.join(self.pkg_root_dir, "python", "pioneer", "netconf-console")
-        else:
-            path = self.get_exe_path_from_PATH(exe)
-
+        path = self.get_exe_path_from_PATH(exe)
         if not os.path.exists(path):
             raise ActionError({'error':'Unable to execute {0}, command no found in PATH {1}'.format(exe, os.environ['PATH'])})
 
