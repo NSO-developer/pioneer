@@ -151,21 +151,52 @@ class ActionHandler(threading.Thread):
         
     def run(self):
         self.debug("Starting worker...")
+
+        stop = False
+        while not stop:
+            self.init_daemon()
+
+            _r = [self.csocket, self.wsocket, self.pipe]
+            while True:
+                (r, w, e) = select.select(_r, [], [])
+
+                if self.pipe in r:
+                    self.debug("Worker stop requested")
+                    stop = True
+                    break
+
+                for s in r:
+                    try:
+                        dp.fd_ready(self.ctx, s)
+                    except _ncs.error.EOF:
+                        self.debug("EOF in worker/control socket, restarting")
+                        break
+                    except Exception as e:
+                        self.debug("Exception in fd_ready: %s" % (str(e), ))
+
+            self.stop_daemon()
+
+        self.debug("Worker stopped")
+
+    def cb_init(self, uinfo):
+        dp.action_set_fd(uinfo, self.wsocket)
+
+    def init_daemon(self):
         self.csocket = socket.socket()
         self.wsocket = socket.socket()
         self.msocket = socket.socket()
 
-        ctx = dp.init_daemon("pioneer")
+        self.ctx = dp.init_daemon("pioneer")
 
         dp.connect(
-            dx=ctx,
+            dx=self.ctx,
             sock=self.csocket,
             type=dp.CONTROL_SOCKET,
             ip='127.0.0.1',
             port=_ncs.NCS_PORT
         )
         dp.connect(
-            dx=ctx,
+            dx=self.ctx,
             sock=self.wsocket,
             type=dp.WORKER_SOCKET,
             ip='127.0.0.1',
@@ -177,34 +208,14 @@ class ActionHandler(threading.Thread):
             port=_ncs.NCS_PORT
         )
 
-        dp.install_crypto_keys(ctx)
-        dp.register_action_cbs(ctx, 'pioneer', self)
-        dp.register_done(ctx)
+        dp.install_crypto_keys(self.ctx)
+        dp.register_action_cbs(self.ctx, 'pioneer', self)
+        dp.register_done(self.ctx)
 
-        _r = [self.csocket, self.wsocket, self.pipe]
-        _w = []
-        _e = []
-
-        while True:
-            (r, w, e) = select.select(_r, _w, _e)
-
-            if self.csocket in r:
-                dp.fd_ready(ctx, self.csocket)
-            if self.wsocket in r:
-                dp.fd_ready(ctx, self.wsocket)
-            if self.pipe in r:
-                # We will only get something through the pipe when it is time to
-                # quit so we break and jump out of the loop.
-                break
-
+    def stop_daemon(self):
         self.wsocket.close()
         self.csocket.close()
-        dp.release_daemon(ctx)
-
-        self.debug("Worker stopped")
-
-    def cb_init(self, uinfo):
-        dp.action_set_fd(uinfo, self.wsocket)
+        dp.release_daemon(self.ctx)
 
 # ---------------------------------------------
 # COMPONENT THREAD THAT WILL BE STARTED BY NCS.
@@ -232,21 +243,9 @@ class Action(object):
         global _schemas_loaded
 
         self.debug("action.py:run starting")
-        #if _schemas_loaded is False:
-        if False: # No schema loading for now
-            try:
-                ms = socket.socket()
-                maapi.connect(sock=ms, ip='127.0.0.1',
-                            port=_ncs.NCS_PORT)
-                #maapi.load_schemas(ms)
-                ms.close()
-                _schemas_loaded = True
-            except:
-                self.debug("Exception: "+ str(sys.exc_info()[0]))
-                
+
         self.debug("run: starting action handler...")
-        w = ActionHandler(self.debug,
-                          self.mypipe[0])
+        w = ActionHandler(self.debug, self.mypipe[0])
 
         # Since the ActionHandler object above is a thread, when we call the
         # start method the Thread class will invoke the
@@ -261,6 +260,8 @@ class Action(object):
 
         # Inform the 'subscriber' that it has to shutdown
         os.write(self.mypipe[1], 'finish')
+        w.join()
+
         self.debug("action.py:run: finished...")
 
     # Just a convenient logging function
