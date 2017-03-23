@@ -190,6 +190,7 @@ class SyncFromIntoFileOp(ConfigOp):
             xsl_name = "ncs-import-as-template.xsl"
 
         self.debug("Fetching config with netconf-console --get-config")
+        self.extend_timeout(self.get_setting('connect-timeout', int))
         xml_config = self.nc_perform('get-config')
         with open(tempfile_f_name, "w") as f_obj:
             f_obj.write(xml_config)
