@@ -16,6 +16,9 @@ from xml.dom import Node
 import xml.dom.minidom
 
 bufsiz = 16384
+ssh_trace_file = None
+count_yangs = 0
+count_yangs_written = 0
 
 nc_ns = 'urn:ietf:params:xml:ns:netconf:base:1.0'
 
@@ -314,6 +317,9 @@ class NetconfSSH(NetconfSSHLikeTransport):
             if len(buf) < bufsiz:
                 self.saved = buf
             else:
+                payload = buf[:bufsiz]
+                if ssh_trace_file:
+                    print>>ssh_trace_file,"%s"%payload
                 self.chan.sendall(buf[:bufsiz])
                 self.saved = buf[bufsiz:]
         except socket.error, x:
@@ -321,6 +327,9 @@ class NetconfSSH(NetconfSSHLikeTransport):
 
     def _send_eom(self):
         try:
+            payload = self.saved + self._get_eom()
+            if ssh_trace_file:
+                print>>ssh_trace_file,"%s"%payload
             self.chan.sendall(self.saved + self._get_eom())
             self.saved = ""
         except socket.error, x:
@@ -329,6 +338,8 @@ class NetconfSSH(NetconfSSHLikeTransport):
 
     def _flush(self):
         try:
+            if ssh_trace_file:
+                print>>ssh_trace_file,"%s"%self.saved
             self.chan.sendall(self.saved)
             self.saved = ""
         except socket.error, x:
@@ -583,6 +594,49 @@ def get_file(name):
     else:
         return open(name, "r")
 
+def extract_save_yang(dirname,capa):
+    modre = re.compile("module=([^&\?]+)").search(capa)
+    if modre:
+        global count_yangs, count_yangs_written
+        count_yangs += 1
+        modname = modre.groups()[0]
+        c.send_msg(get_schema_msg(modname))
+        reply = c.recv_msg()
+        d = xml.dom.minidom.parseString(reply)
+        if d is not None:
+            d = d.firstChild
+        if d is not None:
+            d = d.firstChild
+        strip(d)
+        if (d.namespaceURI == nc_ns and
+            d.localName == 'rpc-error'):
+            print "Could not get schema for %s.yang"%modname
+            return
+
+        ## Can't find some good way to extract actual YANG module
+        ## from minidom, so here goes:
+
+        yangre = re.compile(".*(module +[a-zA-Z0-9_-]+ *{.+}).*</data>.*",
+                            re.MULTILINE|re.DOTALL).search(reply)
+        if yangre:
+            yangtext = yangre.groups()[0]
+            yangtext = yangtext.replace("&lt;","<").\
+                                replace("&gt;",">").\
+                                replace("&amp;","&").\
+                                replace("&quot;","\'')
+            filename = "%s/%s.yang"%(dirname,modname)
+            try:
+                f = open(filename,"w")
+                print>>f,yangtext
+                f.close()
+                print "Wrote schema into %s"%filename
+                count_yangs_written += 1
+            except:
+                print "Could not write schema into %s"%filename
+        else:
+            print "Could not parse schema for %s.yang"%modname
+
+
 def parse_args(sys_args):
     usage = """%prog [-h | --help] [options] [cmdoptions | <filename> | -]
 
@@ -607,6 +661,8 @@ def parse_args(sys_args):
     parser.add_option("--iter", dest="iter", default=1, type="int",
                       help="Sends the same request ITER times.  Useful only in" \
                       " test scripts")
+    parser.add_option("--ssh-output-trace", dest="ssh_trace", default="",
+                      help="Write a copy of all SSH data sent in a file")
     parser.add_option("-i", "--interactive", dest="interactive", action="store_true")
 
     styleopts = parser.add_option_group("Style Options")
@@ -659,6 +715,12 @@ def parse_args(sys_args):
                        action="callback", callback=opt_xpath,
                        help="XPath filter to be used with --get, --get-config, " \
                        "and --create-subscription")
+    cmdopts.add_option("--subtree", dest="subtree", default="",
+                       action="callback", callback=opt_xpath,
+                       help="Subtree filter to be used with --get and " \
+                       "--get-config. Only useful with devices that do not " \
+                       "support --xpath filters. Specify elements to "\
+                       "include as XML (with or without namespaces).")
     cmdopts.add_option("--kill-session", dest="kill_session", default="",
                        help="Takes a session-id as argument.")
     cmdopts.add_option("--discard-changes", dest="discard_changes",
@@ -688,6 +750,9 @@ def parse_args(sys_args):
     cmdopts.add_option("--create-subscription", dest="create_subscription",
                        help="Takes a stream name as parameter, and an optional " \
                        "-x for XPath filtering")
+    cmdopts.add_option("--get-schemata", dest="get_schemata",
+                       help="Takes a directory in which to store retrieved "
+                       "schemata")
     cmdopts.add_option("--rpc", dest="rpc", default="",
                        help="Takes a filename (or '-' for standard input) as "\
                        " argument. The contents of the file"\
@@ -705,6 +770,9 @@ def main(sys_args, iocb):
         o.wdefaults not in ("trim", "explicit", "report-all", "report-all-tagged",
                             "true", "false")):
         iocb.abort("Bad --with-defaults value: %s" % (o.wdefaults, ))
+
+    if (o.ssh_trace != ""):
+        ssh_trace_file = open(o.ssh_trace, "a")
 
     if len(args) == 1:
         filename = args[0]
@@ -747,6 +815,8 @@ def main(sys_args, iocb):
         msg = copy_running_to_startup_msg()
     elif o.get_schema is not None:
         msg = get_schema_msg(o.get_schema)
+    elif o.get_schemata is not None:
+        msg = None
     elif o.create_subscription is not None:
         msg = create_subscription_msg(o.create_subscription, o.xpath)
     elif o.hello:
@@ -849,12 +919,42 @@ def main(sys_args, iocb):
             # print results until EOF
             n = -1
     else:
-        n = o.iter
-        if o.create_subscription is not None or o.interactive:
-            if o.style == 'default':
-                o.style = 'all'
-            # print results until EOF
-            n = -1
+        if (o.get_schemata):
+            dirname = o.get_schemata
+            try:
+                os.mkdir(dirname)
+            except:
+                pass
+            d = xml.dom.minidom.parseString(hello_reply)
+            if d is not None:
+                d = d.firstChild
+            if d is not None:
+                strip(d)
+                if (d.namespaceURI == nc_ns and
+                    d.localName == 'hello' and
+                    d.firstChild is not None):
+                    d = d.firstChild
+                    strip(d)
+                    if (d.namespaceURI == nc_ns and
+                        d.localName == 'capabilities'):
+                        d = d.firstChild
+                        strip(d)
+                        while (d is not None):
+                            if (d.namespaceURI == nc_ns and
+                                d.localName == 'capability'):
+                                capa = d.firstChild.nodeValue.strip()
+                                extract_save_yang(dirname,capa)
+                            d = d.nextSibling
+
+            print "Managed to write %s/%s YANG files"%(count_yangs_written,count_yangs)
+            sys.exit(0)
+        else:
+            n = o.iter
+            if o.create_subscription is not None or o.interactive:
+                if o.style == 'default':
+                    o.style = 'all'
+                # print results until EOF
+                n = -1
 
     # style:
     #   raw:    print what we got on the wire, no extra processing,
@@ -989,6 +1089,8 @@ def main(sys_args, iocb):
 
     # Done
     c.close()
+    if (ssh_trace_file):
+        ssh_trace_file.close()
 
 if __name__ == '__main__':
     iocb = IoCb()
