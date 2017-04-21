@@ -197,15 +197,17 @@ class FetchListOp(YangOp):
         self.debug("yang_fetch_list() with device {0}".format(self.dev_name))
         self.create_yang_dir()
         self.progress_msg("Retrieving module list from device\n")
-        self.extend_timeout(90) # Max 90 seconds for hello, ok?
+        self.extend_timeout(180) # Max 180 seconds for hello, ok?
         hello = self.nc_perform('hello')
         capas = self.extract_capas_from_hello(hello)
         model_list_hello = self.extract_model_list_from_hello(capas)
         if self.device_has_capa_netconf_monitoring(capas):
             self.progress_msg("Device supports netconf-monitoring\n")
-        self.extend_timeout(90) # Max 90 seconds for model fetch, ok?
+        else:
+            self.progress_msg("Device does not report support for netconf-monitoring, trying anyway\n")
+        self.extend_timeout(180) # Max 180 seconds for model fetch, ok?
         model_list_subtree = self.fetch_model_list_netconf_monitoring('subtree')
-        self.extend_timeout(90) # Max 90 seconds for model fetch, ok?
+        self.extend_timeout(180) # Max 180 seconds for model fetch, ok?
         model_list_xpath = self.fetch_model_list_netconf_monitoring('xpath')
 
         model_list = model_list_hello + model_list_subtree + model_list_xpath

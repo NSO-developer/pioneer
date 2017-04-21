@@ -151,7 +151,7 @@ class NetconfOp(base_op.BaseOp):
             return conv(t.get_elem(global_setting_path))
 
     def device_has_capa_netconf_monitoring(self, capas_list):
-        return ("urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring" in capas_list)
+        return ("urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring" in ' '.join(capas_list))
 
     def module_name_from_capa(self, string):
         # Pick out the actual module name "Cisco-IOS-XR-bundlemgr-oper" from a capas line that might look like this:
@@ -192,7 +192,9 @@ class NetconfOp(base_op.BaseOp):
                                            "--user="+str(remote_name),
                                            "--password="+str(remote_password)]
         iocb = IoCb(lambda: self.extend_timeout(timeout))
-        netconf_console.main(args, iocb)
+        self.debug("Calling netconf_console %s" % args)
+        netconf_console.main(args, iocb, self)
+        self.debug("Returned from netconf_console")
 
         xml_get_result = iocb.out.getvalue()
         stderr = iocb.err.getvalue()

@@ -304,6 +304,7 @@ class NetconfSSH(NetconfSSHLikeTransport):
         self.chan.invoke_subsystem("netconf")
 
     def _send(self, buf):
+        global ssh_trace_file
         try:
 #            self.chan.sendall(buf)
 #            return
@@ -326,6 +327,7 @@ class NetconfSSH(NetconfSSHLikeTransport):
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
     def _send_eom(self):
+        global ssh_trace_file
         try:
             payload = self.saved + self._get_eom()
             if ssh_trace_file:
@@ -337,6 +339,7 @@ class NetconfSSH(NetconfSSHLikeTransport):
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
     def _flush(self):
+        global ssh_trace_file
         try:
             if ssh_trace_file:
                 print>>ssh_trace_file,"%s"%self.saved
@@ -432,9 +435,15 @@ def close_msg():
         <close-session/>
     </rpc>'''
 
-def get_msg(cmd, db, xpath, with_defaults, with_inactive):
+def get_msg(cmd, db, xpath, subtree, with_defaults, with_inactive):
     if xpath == "":
-        fstr = ""
+        if subtree == "":
+            fstr = ""
+        else:
+            ## Some devices don't support explicitly specifying type='subtree'
+            ## and since this is the default, we may as well skip it
+            ##fstr = "<filter type='subtree'>%s</filter>" % subtree
+            fstr = "<filter>%s</filter>" % subtree
     else:
         if "'" in xpath:
             fstr = "<filter type='xpath' select=\"%s\"/>" % xpath
@@ -623,7 +632,7 @@ def extract_save_yang(dirname,capa):
             yangtext = yangtext.replace("&lt;","<").\
                                 replace("&gt;",">").\
                                 replace("&amp;","&").\
-                                replace("&quot;","\'')
+                                replace("&quot;","\'")
             filename = "%s/%s.yang"%(dirname,modname)
             try:
                 f = open(filename,"w")
@@ -763,7 +772,10 @@ def parse_args(sys_args):
     return (o, args, parser)
 
 
-def main(sys_args, iocb):
+def main(sys_args, iocb, logger=None):
+    if logger:
+        logger.debug("NC: args %s"%sys_args)
+    global ssh_trace_file
     (o, args, parser) = parse_args(sys_args)
 
     if (o.wdefaults != "" and
@@ -786,7 +798,9 @@ def main(sys_args, iocb):
         cmdf = get_file(filename)
         msg = None
     elif o.get:
-        msg = get_msg("get", None, o.xpath, o.wdefaults, o.winactive)
+        if logger:
+            logger.debug("NC: get %s"%sys_args)
+        msg = get_msg("get", None, o.xpath, o.subtree, o.wdefaults, o.winactive)
     elif hasattr(o, "getConfig"):
         cmd = "get-config"
         if o.getConfig == "default":
@@ -832,6 +846,8 @@ def main(sys_args, iocb):
     if o.style == "raw":
         c.trace = True
 
+    if logger:
+        logger.debug("NC: about to connect")
     # connect to the NETCONF server
     c.connect()
 
