@@ -12,11 +12,11 @@ hello, get and get-config requests to the device to check basic
 NETCONF support.
 
 * The YANG tools allow the operator to build a NETCONF NED for the
-device, potentially disabling YANG models that are fail to compile or
+device, potentially disabling YANG models that fail to compile or
 operate correctly, or simply are out of scope.
 
 * The config tools allow working with device configuration using
-files, which is useful when debuggin situations when the device
+files, which is useful when debugging situations when the device
 configuration violates the device's YANG contract, and when testing
 transactionality properties.
 
@@ -24,6 +24,9 @@ transactionality properties.
 NSO and the device.
 
 See usage examples below.
+
+Note that Pioneer is intended for development work, and will not work
+properly on an NSO "system install".
 
 # Documentation
 
