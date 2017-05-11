@@ -807,7 +807,7 @@ def main(sys_args, iocb, logger=None):
             db = o.db
         else:
             db = o.getConfig
-        msg = get_msg(cmd, db, o.xpath, o.wdefaults, o.winactive)
+        msg = get_msg(cmd, db, o.xpath, o.subtree, o.wdefaults, o.winactive)
     elif o.rpc != "":
         dataf = get_file(o.rpc)
         msg = None
