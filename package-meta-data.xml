@@ -1,6 +1,6 @@
 <ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
   <name>pioneer</name>
-  <package-version>2.22.0</package-version>
+  <package-version>2.23.0</package-version>
   <description>Your Swiss army knife for NETCONF, YANG and NSO NEDs</description>
   <ncs-min-version>4.1</ncs-min-version>
   <component>
