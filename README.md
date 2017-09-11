@@ -62,6 +62,8 @@ Normal NSO package build:
 
 # Testing
 
+Only relevant if you are developing new features for Pioneer.
+
 Lux test cases in the test/ directory. Run as
 
     cd packages/pioneer/test/
