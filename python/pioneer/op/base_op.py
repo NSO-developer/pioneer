@@ -10,7 +10,6 @@ import traceback
 
 import _ncs.dp as dp
 import _ncs.maapi as maapi
-import _ncs.deprecated.maapi as dmaapi
 
 from ex import ActionError
 import pioneer.namespaces.pioneer_ns as ns

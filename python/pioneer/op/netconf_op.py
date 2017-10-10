@@ -4,7 +4,7 @@ import contextlib
 import sys
 
 import _ncs
-import _ncs.deprecated.maapi as dmaapi
+import ncs.maapi as maapi
 
 from cStringIO import StringIO
 from ex import ActionError
@@ -19,9 +19,9 @@ netconf_console.abort = None
 
 @contextlib.contextmanager
 def single_trans(readWrite):
-    with dmaapi.wctx.connect(ip = '127.0.0.1', port = _ncs.NCS_PORT) as c:
-        with dmaapi.wctx.session(c, 'admin') as s:
-            with dmaapi.wctx.trans(s, readWrite = readWrite) as t:
+    with maapi.Maapi() as m:
+        with maapi.Session(m, 'admin', 'system') as s:
+            with maapi.Transaction(m, rw = readWrite) as t:
                 yield t
 
 
