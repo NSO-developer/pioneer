@@ -12,7 +12,7 @@ class LogOp(base_op.BaseOp):
     pass
 
 class PrintNetconfTraceOp(LogOp):
-    def _init_parms(self, params):
+    def _init_params(self, params):
         self.max_age_s = int(self.param_default(params, ns.ns.pioneer_max_age_s, "120"))
 
     def perform(self):
