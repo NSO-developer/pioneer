@@ -49,7 +49,7 @@ class ConfigOp(netconf_op.NetconfOp):
         finally:
             maapi.finish_trans(self.msocket, thandle)
 
-    def proc_run_xsltproc(self, xsl_name, input_path, output_path, log_path, params):
+    def proc_run_xsltproc(self, xsl_name, input_path, output_path, log_path, params = []):
         params = params or []
         params.extend(["--stringparam", "device_name", self.dev_name])
 

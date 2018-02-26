@@ -100,7 +100,7 @@ class DownloadOp(YangOp):
             self.extend_timeout(180) # Max 180 seconds per file, ok?
             try:
                 xml_module = self.nc_perform('get-schema', method_opts=[str(modname)])
-            except ActionError:
+            except:
                 self.progress_msg("-- download failed\n")
                 result_str += "Failed {0} fetch error '{1}'\n".format(modname, stderr)
                 failed_count += 1
