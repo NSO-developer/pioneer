@@ -237,7 +237,7 @@ class NetconfSSHLikeTransport(object):
                 continue
             break
         if sock is None:
-            self.iocb.abort("Failed to connect to %s: %s" % (host, str(x)))
+            iocb.abort("Failed to connect to %s: %s" % (host, str(x)))
         return sock
 
 
@@ -890,7 +890,7 @@ def main(sys_args, iocb, logger=None):
                     if (d.namespaceURI == nc_ns and
                         d.localName == 'capability'):
                         if ('1.1' in versions and
-                            d.firstChild.nodeValue.strip() == base_1_1):
+                            d.firstChild and d.firstChild.nodeValue.strip() == base_1_1):
                             # switch to new framing
                             c.framing = FRAMING_1_1
                     d = d.nextSibling

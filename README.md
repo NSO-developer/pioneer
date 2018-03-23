@@ -40,7 +40,7 @@ the path) the following components. If something is missing, your most
 important use cases may still work, but some tools will not.
 
 * NSO 4.1+
-* Python 2.7+ or 3+
+* Python 2.7+ (*not* 3+)
 * Paramiko (SSH library for Python)
 * xsltproc
 * xmllint
