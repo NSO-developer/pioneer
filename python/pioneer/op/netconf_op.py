@@ -71,7 +71,7 @@ class IoCb(object):
         self.trace.write(msg)
 
     def abort(self, msg):
-        raise Exception(msg)
+        raise ActionError({'error': msg})
 
     def create_trans(self, o):
         if o.proto == "ssh":
