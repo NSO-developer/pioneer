@@ -5,7 +5,7 @@ import re
 import time
 import xml.etree.ElementTree
 
-import cStringIO as StringIO
+import io as StringIO
 
 def _parse_time(time_str):
     time_millis = time_str.split('.')

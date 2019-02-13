@@ -11,17 +11,17 @@ import traceback
 import _ncs
 import _ncs.maapi as maapi
 
-import netconf_op
+import pioneer.op.netconf_op as netconf_op
 import pioneer.namespaces.pioneer_ns as ns
 
-from ex import ActionError
+from pioneer.op.ex import ActionError
 
 class YangOp(netconf_op.NetconfOp):
 
     def _init_params(self, params):
         netconf_op.NetconfOp._init_params(self, params)
         self.yang_directory = self.param_default(params, ns.ns.pioneer_yang_directory, os.path.join("/tmp/download", self.dev_name))
-    
+
     def create_yang_dir(self):
         try:
             os.makedirs(self.yang_directory)
@@ -49,8 +49,8 @@ class YangOp(netconf_op.NetconfOp):
             with open(file_name, "r") as f_obj:
                 return f_obj.read().split('\n')
         except:
-            return []  
-    
+            return []
+
     def parse_name_list(self, name):
         return [m for m in (name.replace(" ", "\n") + "\n").split("\n") if m != ""]
 
@@ -61,7 +61,7 @@ class YangOp(netconf_op.NetconfOp):
 
 class DownloadOp(YangOp):
     tag = ns.ns.pioneer_download
-    
+
     def _init_params(self, params):
         YangOp._init_params(self, params)
         self.name = self.param_default(params, ns.ns.pioneer_include_names, '')
@@ -166,12 +166,12 @@ class DisableOp(YangOp):
             return {'error':"No modules matching pattern"}
         else:
             return {'success':message}
-    
+
 class EnableOp(YangOp):
     def _init_params(self, params):
         YangOp._init_params(self, params)
         self.name_pattern = self.param_default(params, ns.ns.pioneer_name_pattern, "*").split(' ')
-    
+
     def perform(self):
         self.debug("yang_enable() with device {0}".format(self.dev_name))
         if not os.path.exists(self.yang_directory):
@@ -211,12 +211,12 @@ class FetchListOp(YangOp):
         model_list_xpath = self.fetch_model_list_netconf_monitoring('xpath')
 
         model_list = model_list_hello + model_list_subtree + model_list_xpath
-        
+
         mods={}
         for modname in model_list:
             mods[modname] = 1
         self.debug("Processing list 2 " + str(mods))
-        self.progress_msg( 
+        self.progress_msg(
 """
 Found out the names for a total of {0} modules
 hello message: {1}
@@ -284,14 +284,14 @@ class CheckDependenciesOp(YangOp):
             for line in compiler_output.split("\n"):
                 self.debug("line " + str(line) + "\n")
                 err_msg_parts = line.split("error: ")
-                
+
                 self.debug("err_msg_parts " + str(err_msg_parts) + "\n")
                 if len(err_msg_parts) == 2:
                     module_msg_parts = err_msg_parts[1].split('"')
                     if module_msg_parts[0] == "module " and module_msg_parts[2] == " not found in search path":
                         missing_modname = module_msg_parts[1]
                         missing_files[missing_modname] = 1
-                        if missing_modname not in disabled_yangs:                        
+                        if missing_modname not in disabled_yangs:
                             self.progress_msg(missing_modname + " ")
                             self.make_yang_mark_file(missing_modname)
                         else:
@@ -304,7 +304,7 @@ class CheckDependenciesOp(YangOp):
         return {'missing':" ".join(missing_files.keys()),
                 'failure':"The set of {0} enabled yang files are missing {1} files".
                     format(len(enabled_yangs), len(missing_files))}
-    
+
 class DeleteOp(YangOp):
     def _init_params(self, params):
         YangOp._init_params(self, params)
@@ -391,7 +391,7 @@ class InstallOpBase(YangOp):
             shutil.move(package_dir_name, bak_name)
             return (package_dir_name, bak_name)
         return (package_dir_name, None)
-    
+
 class InstallNetconfNedOp(InstallOpBase):
     def perform(self):
         self.debug("yang_install_netconf_ned() with device {0}".format(self.dev_name))
@@ -410,13 +410,13 @@ class UninstallNetconfNedOp(InstallOpBase):
         if bak_name == None:
             return {'error':'No NED installed in ' + package_dir_name}
         return {'success':'Old NED package moved to ' + bak_name}
-    
+
 class SftpOp(YangOp):
     def _init_params(self, params):
         YangOp._init_params(self, params)
         self.remote_path = self.param_default(params, ns.ns.pioneer_remote_path, "")
         self.name = self.param_default(params, ns.ns.pioneer_include_names, "")
-    
+
     def perform(self):
         self.debug("yang_sftp() with device {0}".format(self.dev_name))
         self.create_yang_dir()
@@ -430,7 +430,7 @@ class SftpOp(YangOp):
 
         model_list = self.parse_name_list(self.name)
         match = lambda n: (len(model_list) == 0) or (n in model_list)
-        
+
         self.debug('connecting to {0}:{1} as {2}...'.format(host, port, username))
         message = 'connection failed'
         try:
@@ -456,7 +456,7 @@ class SftpOp(YangOp):
             self.debug(traceback.format_exc())
 
         return {'yang-directory':self.yang_directory, 'message':message}
-    
+
     def _yang_sftp_read_settings(self):
         def safe_get(sock, th, path, default=None):
             try:
