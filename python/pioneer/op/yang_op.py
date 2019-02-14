@@ -275,7 +275,8 @@ class CheckDependenciesOp(YangOp):
             item += 1
             self.progress_msg("{0}/{1} checking {2}: ".format(item, items, yang))
             self.extend_timeout(180) # Max 3 mins per file, ok?
-            (depend_txt, stderr) = self.proc_run([self.ncs_dir + "/bin/pyang",
+            #'pyang' must be in PATH before using pioneer
+            (depend_txt, stderr) = self.proc_run(["pyang",
                               "-f", "depend",
                               "--path", self.yang_directory,
                               self.yang_directory + "/" + yang + ".yang"])
