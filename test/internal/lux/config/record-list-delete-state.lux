@@ -10,11 +10,11 @@
     !devices device nc0 pioneer config record-state state-name empty
     ??success Recorded states ['empty']
     ?admin@ncs\(config\)\#
-    
+
     !devices device nc0 sync-from
     ?result true
     ?admin@ncs\(config\)\#
-    
+
     !devices device nc0 pioneer config record-state state-name initial
     ??success Recorded states ['initial']
     ?admin@ncs\(config\)\#
@@ -34,7 +34,8 @@
     ?admin@ncs\(config\)\#
 
     !devices device nc0 pioneer config list-states
-    ??success Saved device states: ['configured', 'empty', 'initial']
+    # states come in different order in Python 2.7.15+
+    ?success Saved device states: \[('configured'|'empty'|'initial'), ('configured'|'empty'|'initial'), ('configured'|'empty'|'initial')\]
     ?admin@ncs\(config\)\#
 
     !devices device nc0 pioneer config delete-state state-name empty
@@ -42,7 +43,7 @@
     ?admin@ncs\(config\)\#
 
     !devices device nc0 pioneer config list-states
-    ??success Saved device states: ['configured', 'initial']
+    ?success Saved device states: \[('configured'|'initial'), ('configured'|'initial')\]
     ?admin@ncs\(config\)\#
 
 [shell verify]
@@ -50,6 +51,6 @@
     ??ncs-run/logs/nc0--configured.state.cb
     ??ncs-run/logs/nc0--initial.state.cb
     ?SH-PROMPT
-    
+
 [cleanup]
     [invoke common-cleanup]

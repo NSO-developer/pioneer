@@ -13,7 +13,9 @@
     [progress test build failure]
     !devices device nc0 pioneer yang build-netconf-ned yang-directory ../data/missing
     ?Build failed. Error and warning messages below. See log for complete details
-    ???make: *** [ncsc-out/.done] Error 1
+# the line below is 'make: *** [Makefile:25: ncsc-out/.done] Error 1'
+# but is often missing, commented TODO
+# ?make: \*\*\* \[.*ncsc-out/.done\] Error 1
     ?failure Build failed
     ?admin@ncs\(config\)\#
 
@@ -22,6 +24,6 @@
     ?Silence timeout, terminating process
     ?failure Build failed
     ?admin@ncs\(config\)\#
-    
+
 [cleanup]
     [invoke common-cleanup]
