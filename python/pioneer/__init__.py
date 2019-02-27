@@ -1,3 +1,3 @@
 __all__ = ['action', 'namespaces', 'op']
 
-from action import Action
+from pioneer.action import Action

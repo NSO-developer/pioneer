@@ -36,11 +36,11 @@ from ncs_pyvm import NcsPyVM
 _schemas_loaded = False
 
 # operation modules
-import op.config_op
-import op.log_op
-import op.netconf_op
-import op.yang_op
-from op.ex import ActionError
+import pioneer.op.config_op
+import pioneer.op.log_op
+import pioneer.op.netconf_op
+import pioneer.op.yang_op
+from pioneer.op.ex import ActionError
 
 def param_default(params, tag, default):
     matching_param_list = [p.v for p in params if p.tag == tag]
@@ -50,29 +50,29 @@ def param_default(params, tag, default):
 
 class ActionHandler(threading.Thread):
     handlers = {
-        ns.ns.pioneer_delete_state: op.config_op.DeleteStateOp,
-        ns.ns.pioneer_explore_transitions: op.config_op.ExploreTransitionsOp,
-        ns.ns.pioneer_import_into_file: op.config_op.ImportIntoFileOp,
-        ns.ns.pioneer_list_states: op.config_op.ListStatesOp,
-        ns.ns.pioneer_record_state: op.config_op.RecordStateOp,
-        ns.ns.pioneer_sync_from_into_file: op.config_op.SyncFromIntoFileOp,
-        ns.ns.pioneer_transition_to_state: op.config_op.TransitionToStateOp,
-        ns.ns.pioneer_hello: op.netconf_op.HelloOp,
-        ns.ns.pioneer_get: op.netconf_op.GetOp,
-        ns.ns.pioneer_get_config: op.netconf_op.GetConfigOp,
-        ns.ns.pioneer_build_netconf_ned: op.yang_op.BuildNetconfNedOp,
-        ns.ns.pioneer_disable: op.yang_op.DisableOp,
-        ns.ns.pioneer_download: op.yang_op.DownloadOp,
-        ns.ns.pioneer_enable: op.yang_op.EnableOp,
-        ns.ns.pioneer_fetch_list: op.yang_op.FetchListOp,
-        ns.ns.pioneer_show_list: op.yang_op.ShowListOp,
-        ns.ns.pioneer_check_dependencies: op.yang_op.CheckDependenciesOp,
-        ns.ns.pioneer_delete: op.yang_op.DeleteOp,
-        ns.ns.pioneer_build_netconf_ned: op.yang_op.BuildNetconfNedOp,
-        ns.ns.pioneer_install_netconf_ned: op.yang_op.InstallNetconfNedOp,
-        ns.ns.pioneer_uninstall_netconf_ned: op.yang_op.UninstallNetconfNedOp,
-        ns.ns.pioneer_sftp: op.yang_op.SftpOp,
-        ns.ns.pioneer_print_netconf_trace: op.log_op.PrintNetconfTraceOp
+        ns.ns.pioneer_delete_state: pioneer.op.config_op.DeleteStateOp,
+        ns.ns.pioneer_explore_transitions: pioneer.op.config_op.ExploreTransitionsOp,
+        ns.ns.pioneer_import_into_file: pioneer.op.config_op.ImportIntoFileOp,
+        ns.ns.pioneer_list_states: pioneer.op.config_op.ListStatesOp,
+        ns.ns.pioneer_record_state: pioneer.op.config_op.RecordStateOp,
+        ns.ns.pioneer_sync_from_into_file: pioneer.op.config_op.SyncFromIntoFileOp,
+        ns.ns.pioneer_transition_to_state: pioneer.op.config_op.TransitionToStateOp,
+        ns.ns.pioneer_hello: pioneer.op.netconf_op.HelloOp,
+        ns.ns.pioneer_get: pioneer.op.netconf_op.GetOp,
+        ns.ns.pioneer_get_config: pioneer.op.netconf_op.GetConfigOp,
+        ns.ns.pioneer_build_netconf_ned: pioneer.op.yang_op.BuildNetconfNedOp,
+        ns.ns.pioneer_disable: pioneer.op.yang_op.DisableOp,
+        ns.ns.pioneer_download: pioneer.op.yang_op.DownloadOp,
+        ns.ns.pioneer_enable: pioneer.op.yang_op.EnableOp,
+        ns.ns.pioneer_fetch_list: pioneer.op.yang_op.FetchListOp,
+        ns.ns.pioneer_show_list: pioneer.op.yang_op.ShowListOp,
+        ns.ns.pioneer_check_dependencies: pioneer.op.yang_op.CheckDependenciesOp,
+        ns.ns.pioneer_delete: pioneer.op.yang_op.DeleteOp,
+        ns.ns.pioneer_build_netconf_ned: pioneer.op.yang_op.BuildNetconfNedOp,
+        ns.ns.pioneer_install_netconf_ned: pioneer.op.yang_op.InstallNetconfNedOp,
+        ns.ns.pioneer_uninstall_netconf_ned: pioneer.op.yang_op.UninstallNetconfNedOp,
+        ns.ns.pioneer_sftp: pioneer.op.yang_op.SftpOp,
+        ns.ns.pioneer_print_netconf_trace: pioneer.op.log_op.PrintNetconfTraceOp
     }
 
     ######################################################################
@@ -84,11 +84,11 @@ class ActionHandler(threading.Thread):
 
         dev_name = str(kp[-3][0])
         self.debug("thandle={0} usid={1}".format(uinfo.actx_thandle, uinfo.usid))
-        
+
         try:
             if op_name.tag not in self.handlers:
                 raise ActionError({'error': "Operation not implemented: {0}".format(op_name)})
-            
+
             handler_cls = self.handlers[op_name.tag]
             handler = handler_cls(self.msocket, uinfo, dev_name, params, self.debug)
             result = handler.perform()
@@ -107,48 +107,48 @@ class ActionHandler(threading.Thread):
     def action_response(self, uinfo, result):
         reply = []
 
-        if result.has_key('message'):
+        if 'message' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_message), V(result['message']))]
-        if result.has_key('error'):
+        if 'error' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_error), V(result['error']))]
-        if result.has_key('success'):
+        if 'success' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_success), V(result['success']))]
-        if result.has_key('failure'):
+        if 'failure' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_failure), V(result['failure']))]
-        if result.has_key('filename'):
+        if 'filename' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_filename), V(result['filename']))]
-        if result.has_key('ned-directory'):
+        if 'ned-directory' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_ned_directory), V(result['ned-directory']))]
-        if result.has_key('yang-directory'):
+        if 'yang-directory' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_yang_directory), V(result['yang-directory']))]
-        if result.has_key('missing'):
+        if 'missing' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_missing), V(result['missing']))]
-        if result.has_key('enabled'):
+        if 'enabled' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_enabled), V(result['enabled']))]
-        if result.has_key('disabled'):
+        if 'disabled' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_disabled), V(result['disabled']))]
-        if result.has_key('marked'):
+        if 'marked' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_marked), V(result['marked']))]
-        if result.has_key('get-config-reply'):
+        if 'get-config-reply' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_get_config_reply), V(result['get-config-reply']))]
-        if result.has_key('get-reply'):
+        if 'get-reply' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_get_reply), V(result['get-reply']))]
-        if result.has_key('hello-reply'):
+        if 'hello-reply' in result:
             reply += [TV(XT(ns.ns.hash, ns.ns.pioneer_hello_reply), V(result['hello-reply']))]
             self.debug("action reply={0}".format(reply))
 
         dp.action_reply_values(uinfo, reply)
         return _ncs.CONFD_OK
-            
+
     ######################################################################
     ##  REGISTRATION  ####################################################
     ######################################################################
-            
+
     def __init__(self, debug, pipe):
         threading.Thread.__init__(self)
         self.debug = debug
         self.pipe = pipe
-        
+
     def run(self):
         self.debug("Starting worker...")
 
@@ -259,7 +259,7 @@ class Action(object):
         self.waithere.acquire()
 
         # Inform the 'subscriber' that it has to shutdown
-        os.write(self.mypipe[1], 'finish')
+        os.write(self.mypipe[1], b'finish')
         w.join()
 
         self.debug("action.py:run: finished...")

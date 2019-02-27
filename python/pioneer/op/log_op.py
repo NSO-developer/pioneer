@@ -5,8 +5,8 @@ import time
 
 import pioneer.namespaces.pioneer_ns as ns
 
-import base_op
-import netconf_trace
+import pioneer.op.base_op as base_op
+import pioneer.op.netconf_trace as netconf_trace
 
 class LogOp(base_op.BaseOp):
     pass

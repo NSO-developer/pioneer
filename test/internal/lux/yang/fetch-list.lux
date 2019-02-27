@@ -8,7 +8,7 @@
     [invoke enter-ncs-config]
     [progress fetching list]
     !devices device nc0 pioneer yang fetch-list
-    ?message Marked 18 modules for download, skipped 0
+    ?message Marked 28 modules for download, skipped 0
     ?admin@ncs\(config\)\#
 
 [cleanup]

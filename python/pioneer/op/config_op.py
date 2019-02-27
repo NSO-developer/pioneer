@@ -12,9 +12,9 @@ import traceback
 import _ncs
 import _ncs.maapi as maapi
 
-import netconf_op
+import pioneer.op.netconf_op as netconf_op
 import pioneer.namespaces.pioneer_ns as ns
-from ex import ActionError
+from pioneer.op.ex import ActionError
 
 class ConfigOp(netconf_op.NetconfOp):
     def state_name_to_filename(self, statename, devname):
@@ -77,7 +77,7 @@ class DeleteStateOp(ConfigOp):
         except:
             return {'error':"Could not delete " + state_filename}
         return {'success':"Deleted " + self.state_name}
-        
+
 class ImportIntoFileOp(ConfigOp):
     def _init_params(self, params):
         self.file_name = str(params[0].v)
@@ -145,7 +145,7 @@ class RecordStateOp(ConfigOp):
             if index > 0:
                 state_name_index = state_name+"-"+str(index)
             state_filename = self.states_dir + "/" + self.state_name_to_filename(state_name_index, self.dev_name)
-            with file(state_filename, "w") as state_file:
+            with open(state_filename, "w") as state_file:
                 try:
                     ssocket = socket.socket()
                     _ncs.stream_connect(
@@ -164,9 +164,9 @@ class RecordStateOp(ConfigOp):
                 finally:
                     ssocket.close()
             state_filenames += [state_name_index]
-                
+
             ##maapi.save_config_result(sock, id) -> None
-                            
+
             index += 1
             maapi.revert(self.msocket, self.uinfo.actx_thandle)
         return {'success':"Recorded states " + str(state_filenames)}
@@ -235,9 +235,9 @@ class ExploreTransitionsOp(ConfigOp):
             stop_time += time.time()
         self.debug("stop_cases = {0}, stop_time = {1}".format(stop_cases, stop_time))
         index = 0
-        for from_state in xrange(0, num_states):
+        for from_state in range(0, num_states):
             remaining_transitions[from_state] = {}
-            for to_state in xrange(0, num_states):
+            for to_state in range(0, num_states):
                 if to_state == from_state:
                     continue ## Can't transition to same state
                 remaining_transitions[from_state][to_state] = 1
@@ -268,10 +268,10 @@ class ExploreTransitionsOp(ConfigOp):
                     break
 
             ## Pick a remaining to_state at random
-            (to_state, dummy_val) = remaining_transitions[from_state].popitem()                 
+            (to_state, dummy_val) = remaining_transitions[from_state].popitem()
             if 0 == len(remaining_transitions[from_state]):
                 del remaining_transitions[from_state]
-            
+
             from_name = self.state_filename_to_name(state_files[from_state], self.dev_name)
             to_name = self.state_filename_to_name(state_files[to_state], self.dev_name)
             self.progress_msg("Transition {0}/{1}: {2} ==> {3}\n".format(index, num_transitions, from_name, to_name))
@@ -288,7 +288,7 @@ class ExploreTransitionsOp(ConfigOp):
         if error_msg:
             result['error'] = error_msg
         return result
-        
+
 class TransitionToStateOp(ConfigOp):
     def _init_params(self, params):
         self.state_name = self.param_default(params, ns.ns.pioneer_state_name, "")

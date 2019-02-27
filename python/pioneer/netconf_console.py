@@ -3,13 +3,13 @@
 # Trivial Netconf Console
 #
 
+from __future__ import print_function
 import sys
 import os
 import re
 import threading
 
 from optparse import OptionParser, IndentedHelpFormatter
-import textwrap
 import base64
 import socket
 from xml.dom import Node
@@ -72,7 +72,7 @@ class OutputThread(threading.Thread):
 class NetconfSSHLikeTransport(object):
     def __init__(self, iocb):
         self.iocb = iocb
-        self.buf = ""
+        self.buf_bytes = b""
         self.framing = FRAMING_1_0
         self.eom_found = False
         self.trace = False
@@ -126,50 +126,50 @@ class NetconfSSHLikeTransport(object):
     #      (-1, bytes) on socket EOF
     #      (0, "") on EOM
     #      (1, chunk-data) on data
-    def recv_chunk(self, timeout=None):
+    def recv_chunk_bytes(self, timeout=None):
         self._set_timeout(timeout)
         if self.framing == FRAMING_1_0:
             if self.eom_found:
                 self.eom_found = False
-                return (0, "")
-            bytes = self.buf
-            self.buf = ""
+                return (0, b"")
+            bytes = self.buf_bytes
+            self.buf_bytes = b""
             while len(bytes) < 6:
                 x = self._recv(bufsiz)
-                if x == "":
+                if x == b"":
                     return (-1, bytes)
                 bytes += x
-            idx = bytes.find("]]>]]>")
+            idx = bytes.find(b"]]>]]>")
             if idx > -1:
                 # eom marker found; store rest in buf
                 self.eom_found = True
-                self.buf = bytes[idx+6:]
+                self.buf_bytes = bytes[idx + 6:]
                 return (1, bytes[:idx])
             else:
                 # no eom marker found, keep the last 5 bytes
                 # (might contain parts of the eom marker)
-                self.buf = bytes[-5:]
+                self.buf_bytes = bytes[-5:]
                 return (1, bytes[:-5])
         else:
             # new framing
-            bytes = self.buf
-            self.buf = ""
+            bytes = self.buf_bytes
+            self.buf_bytes = b""
             # make sure we have at least 4 bytes; LF HASH INT/HASH LF
             while len(bytes) < 4:
                 x = self._recv(bufsiz)
-                if x == "":
+                if x == b"":
                     # error, return what we have
                     return (-1, bytes)
                 bytes += x
             # check the first two bytes
-            if bytes[0:2] != "\n#":
+            if bytes[0:2] != b"\n#":
                 # framing error
                 return (-2, bytes)
             # read the chunk size
             sz = -1
             while sz == -1:
                 # find the terminating LF
-                idx = bytes.find("\n", 2)
+                idx = bytes.find(b"\n", 2)
                 if idx > 12:
                     # framing error - too large integer or not correct
                     # chunk size specification
@@ -182,10 +182,10 @@ class NetconfSSHLikeTransport(object):
                             # framing error - range error
                             return (-2, bytes)
                     except:
-                        if bytes[2:idx] == "#":
+                        if bytes[2:idx] == b"#":
                             # EOM
-                            self.buf = bytes[idx+1:]
-                            return (0, "")
+                            self.buf_bytes = bytes[idx + 1:]
+                            return (0, b"")
                         # framing error - not an integer, and not EOM
                         return (-2, bytes)
                     # skip the chunk size.  the while loop is now done
@@ -193,19 +193,27 @@ class NetconfSSHLikeTransport(object):
                 else:
                     # terminating LF not found, read more
                     x = self._recv(bufsiz)
-                    if x == "":
+                    if x == b"":
                         # error, return what we have
                         return (-1, bytes)
                     bytes += x
             # read the chunk data
             while len(bytes) < sz:
                 x = self._recv(bufsiz)
-                if x == "":
+                if x == b"":
                     return (-1, bytes)
                 bytes += x
             # save rest of data
-            self.buf = bytes[sz:]
+            self.buf_bytes = bytes[sz:]
             return (1, bytes[:sz])
+
+    def recv_chunk(self, timeout=None):
+        (flag, rv) = self.recv_chunk_bytes(timeout=timeout)
+        #decode in python 2.7 is slow for large data
+        #(and needed only for python 3)
+        if sys.hexversion > 0x03000000:
+            rv = rv.decode()
+        return (flag, rv)
 
     def recv_msg(self, timeout=None):
         msg = ""
@@ -226,12 +234,12 @@ class NetconfSSHLikeTransport(object):
             af, socktype, proto, canonname, sa = res
             try:
                 sock = socket.socket(af, socktype, proto)
-            except socket.error, x:
+            except socket.error as x:
                 sock = None
                 continue
             try:
                 sock.connect(sa)
-            except socket.error, x:
+            except socket.error as x:
                 sock.close()
                 sock = None
                 continue
@@ -251,7 +259,7 @@ class NetconfSSH(NetconfSSHLikeTransport):
             import paramiko
             self.paramiko = paramiko
         except:
-            self.iocb.abort("You must install the python ssh implementation paramiko\n" +
+            iocb.abort("You must install the python ssh implementation paramiko\n" +
                             "in order to use ssh.")
 
         NetconfSSHLikeTransport.__init__(self, iocb)
@@ -320,10 +328,10 @@ class NetconfSSH(NetconfSSHLikeTransport):
             else:
                 payload = buf[:bufsiz]
                 if ssh_trace_file:
-                    print>>ssh_trace_file,"%s"%payload
+                    print("%s" % payload, file=ssh_trace_file)
                 self.chan.sendall(buf[:bufsiz])
                 self.saved = buf[bufsiz:]
-        except socket.error, x:
+        except socket.error as x:
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
     def _send_eom(self):
@@ -331,10 +339,10 @@ class NetconfSSH(NetconfSSHLikeTransport):
         try:
             payload = self.saved + self._get_eom()
             if ssh_trace_file:
-                print>>ssh_trace_file,"%s"%payload
+                print("%s" % payload, file=ssh_trace_file)
             self.chan.sendall(self.saved + self._get_eom())
             self.saved = ""
-        except socket.error, x:
+        except socket.error as x:
             self.saved = ""
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
@@ -342,10 +350,10 @@ class NetconfSSH(NetconfSSHLikeTransport):
         global ssh_trace_file
         try:
             if ssh_trace_file:
-                print>>ssh_trace_file,"%s"%self.saved
+                print("%s" % self.saved, file=ssh_trace_file)
             self.chan.sendall(self.saved)
             self.saved = ""
-        except socket.error, x:
+        except socket.error as x:
             self.saved = ""
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
@@ -376,12 +384,17 @@ class NetconfTCP(NetconfSSHLikeTransport):
     def connect(self):
         self.sock = self.create_connection(self.hostname, self.port)
         sockname = self.sock.getsockname()
-        self.sock.send("["+self.username+";%s;tcp;%d;%d;%s;%s;%s;]\n"%(sockname[0], os.getuid(), os.getgid(), self.suplgids, os.getenv("HOME", "/tmp"), self.groups))
+        self.sock.send(
+            "[{};{};tcp;{};{};{};{};{};]\n".format(self.username, sockname[0],
+                                                   os.getuid(), os.getgid(),
+                                                   self.suplgids,
+                                                   os.getenv("HOME", "/tmp"),
+                                                   self.groups).encode())
 
     def _send(self, buf):
         try:
-            self.sock.send(buf)
-        except socket.error, x:
+            self.sock.send(buf.encode())
+        except socket.error as x:
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
     def _send_eom(self):
@@ -565,7 +578,7 @@ def create_subscription_msg(stream, xpath):
 
 
 def read_msg():
-    print "\n* Enter a NETCONF operation, end with an empty line"
+    print ("\n* Enter a NETCONF operation, end with an empty line")
     msg = '''<?xml version="1.0" encoding="UTF-8"?>
     <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="2">
     '''
@@ -619,7 +632,7 @@ def extract_save_yang(dirname,capa):
         strip(d)
         if (d.namespaceURI == nc_ns and
             d.localName == 'rpc-error'):
-            print "Could not get schema for %s.yang"%modname
+            print ("Could not get schema for %s.yang"%modname)
             return
 
         ## Can't find some good way to extract actual YANG module
@@ -636,14 +649,14 @@ def extract_save_yang(dirname,capa):
             filename = "%s/%s.yang"%(dirname,modname)
             try:
                 f = open(filename,"w")
-                print>>f,yangtext
+                print(yangtext, file=f)
                 f.close()
-                print "Wrote schema into %s"%filename
+                print ("Wrote schema into %s"%filename)
                 count_yangs_written += 1
             except:
-                print "Could not write schema into %s"%filename
+                print ("Could not write schema into %s"%filename)
         else:
-            print "Could not parse schema for %s.yang"%modname
+            print ("Could not parse schema for %s.yang"%modname)
 
 
 def parse_args(sys_args):
@@ -962,7 +975,7 @@ def main(sys_args, iocb, logger=None):
                                 extract_save_yang(dirname,capa)
                             d = d.nextSibling
 
-            print "Managed to write %s/%s YANG files"%(count_yangs_written,count_yangs)
+            print ("Managed to write %s/%s YANG files"%(count_yangs_written,count_yangs))
             sys.exit(0)
         else:
             n = o.iter
@@ -1016,13 +1029,13 @@ def main(sys_args, iocb, logger=None):
                                      stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE)
-                forward_fun = lambda chunk: write_fd(iocb, p.stdin, chunk)
+                forward_fun = lambda chunk: write_fd(iocb, p.stdin, chunk.encode())
                 p.stderr.close()
                 output_thread = OutputThread(iocb, p.stdout)
                 output_thread.start()
             else:
                 p = os.popen(xmllint + " 2>/dev/null", 'w')
-                forward_fun = lambda chunk: write_fd(iocb, p, chunk)
+                forward_fun = lambda chunk: write_fd(iocb, p, chunk.encode())
 
         else:
             forward_fun = iocb.output
@@ -1111,7 +1124,7 @@ def main(sys_args, iocb, logger=None):
 if __name__ == '__main__':
     iocb = IoCb()
 
-    if sys.hexversion < 0x02030000:
-        iocb.abort("This script needs python version >= 2.3")
+    if sys.hexversion < 0x02070000:
+        iocb.abort("This script needs python version >= 2.7")
 
     main(sys.argv[1:], iocb)

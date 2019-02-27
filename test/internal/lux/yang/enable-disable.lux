@@ -13,7 +13,7 @@
     !devices device nc0 pioneer yang disable name-pattern enabled
     ?error Failed to find source directory .*/nc0
     [invoke exit-ncs-config]
-    
+
     [progress creating state]
     !mkdir -p /tmp/download/nc0
     !touch /tmp/download/nc0/disabled.yang.no
@@ -22,7 +22,7 @@
     ?SH-PROMPT
     !touch /tmp/download/nc0/marked-enabled.yang.yes
     ?SH-PROMPT
-    
+
     [progress test with state]
     [invoke enter-ncs-config]
     !devices device nc0 pioneer yang enable name-pattern disabled
@@ -41,8 +41,8 @@
 
 [shell enable-disable]
     !devices device nc0 pioneer yang enable name-pattern *enabled
-    ?Enabling module enabled
     ?Enabling module marked-enabled
+    ?Enabling module enabled
     ?admin@ncs\(config\)\#
 
 [shell verify]
