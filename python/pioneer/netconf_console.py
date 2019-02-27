@@ -251,7 +251,7 @@ class NetconfSSH(NetconfSSHLikeTransport):
             import paramiko
             self.paramiko = paramiko
         except:
-            self.iocb.abort("You must install the python ssh implementation paramiko\n" +
+            iocb.abort("You must install the python ssh implementation paramiko\n" +
                             "in order to use ssh.")
 
         NetconfSSHLikeTransport.__init__(self, iocb)
