@@ -15,11 +15,11 @@
     <xsl:apply-templates select="netconf10:data/confdstate:confd-state/confdstate:loaded-data-models/confdstate:data-model"/>
   </xsl:template>
 
-  <xsl:template match="/netconf10:rpc-reply/netconf10:data/ncstate:netconf-state/ncstate:schemas/ncstate:schema[ncstate:format='yang'][ncstate:location='NETCONF']">
+  <xsl:template match="/netconf10:rpc-reply/netconf10:data/ncstate:netconf-state/ncstate:schemas/ncstate:schema[ncstate:format='yang' or ncstate:format='ncm:yang'][ncstate:location='NETCONF']">
     <xsl:text>netconf:</xsl:text><xsl:value-of select="ncstate:identifier"/><xsl:text>
 </xsl:text>
   </xsl:template>
-  <xsl:template match="/netconf10:rpc-reply/netconf10:data/ncstate:netconf-state/ncstate:schemas/ncstate:schema[ncstate:format='yang'][ncstate:location!='NETCONF']">
+  <xsl:template match="/netconf10:rpc-reply/netconf10:data/ncstate:netconf-state/ncstate:schemas/ncstate:schema[ncstate:format='yang' or ncstate:format='ncm:yang'][ncstate:location!='NETCONF']">
     <xsl:text>url:</xsl:text><xsl:value-of select="ncstate:identifier"/><xsl:text>:</xsl:text><xsl:value-of select="ncstate:location"/><xsl:text>
 </xsl:text>
   </xsl:template>

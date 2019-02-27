@@ -31,7 +31,8 @@ properly on an NSO "system install".
 # Documentation
 
 Apart from this file, the main documentation is the pioneer.yang file,
-where each command is described.
+where each command is described. You may also want to have a look at
+Wai Tai's demo of Pioneer at https://cisco.jiveon.com/videos/49927
 
 # Dependencies
 
