@@ -6,10 +6,10 @@ import sys
 import _ncs
 import ncs.maapi as maapi
 
-from cStringIO import StringIO
-from ex import ActionError
+from io import BytesIO
+from pioneer.op.ex import ActionError
 
-import base_op
+import pioneer.op.base_op as base_op
 import pioneer.namespaces.pioneer_ns as ns
 import pioneer.netconf_console as netconf_console
 
@@ -56,9 +56,9 @@ class ExtendTimeoutNetconfSSH(netconf_console.NetconfSSH):
 class IoCb(object):
     def __init__(self, extend_timeout):
         self.extend_timeout = extend_timeout
-        self.out = StringIO()
-        self.err = StringIO()
-        self.trace = StringIO()
+        self.out = BytesIO()
+        self.err = BytesIO()
+        self.trace = BytesIO()
 
     def output(self, msg):
         self.out.write(msg)
@@ -157,7 +157,7 @@ class NetconfOp(base_op.BaseOp):
         # Pick out the actual module name "Cisco-IOS-XR-bundlemgr-oper" from a capas line that might look like this:
         # http://cisco.com/ns/yang/Cisco-IOS-XR-bundlemgr-oper?module=Cisco-IOS-XR-bundlemgr-oper&revision=2015-11-09
         return string.split("?module=")[1].split("&")[0]
-    
+
     def extract_model_list_from_hello(self, capas):
         self.debug("Hello capas len:\n" + str(len(capas)))
         model_list = [self.module_name_from_capa(c) for c in capas if (c.find("?module=") >= 0)]
@@ -177,7 +177,7 @@ class NetconfOp(base_op.BaseOp):
             raise ActionError({'error':"Failed to parse capas list:\n" + stderr})
         capas_list=capas_list_txt.split("\n")
         return capas_list
-    
+
     def nc_perform(self, op='get', subtree='', xpath='', method_opts=None, timeout=20):
         if subtree != '':
             method_opts = [ "--subtree", subtree ]
@@ -196,8 +196,8 @@ class NetconfOp(base_op.BaseOp):
         netconf_console.main(args, iocb, self)
         self.debug("Returned from netconf_console")
 
-        xml_get_result = iocb.out.getvalue()
-        stderr = iocb.err.getvalue()
+        xml_get_result = iocb.out.getvalue().decode()
+        stderr = iocb.err.getvalue().decode()
 
         self.debug("Fetched:\n" + xml_get_result + "\n\n" + stderr)
         if stderr != "":

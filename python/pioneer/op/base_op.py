@@ -11,7 +11,7 @@ import traceback
 import _ncs.dp as dp
 import _ncs.maapi as maapi
 
-from ex import ActionError
+from pioneer.op.ex import ActionError
 import pioneer.namespaces.pioneer_ns as ns
 
 class BaseOp(object):
@@ -20,34 +20,35 @@ class BaseOp(object):
     ncs_run_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(pkg_root_dir))))
     ncs_rollback_dir = os.path.join(ncs_run_dir, "logs")
     states_dir = os.path.join(ncs_run_dir, "logs")
-    
+
     def __init__(self, msocket, uinfo, dev_name, params, debug_func):
         self.msocket = msocket
         self.uinfo = uinfo
         self.dev_name = dev_name
 
         self.debug = debug_func
-        
+
         self._init_params(params)
 
     def _init_params(self, params):
         # Implement in subclasses
         pass
-    
+
     def param_default(self, params, tag, default):
         matching_param_list = [p.v for p in params if p.tag == tag]
         if len(matching_param_list) == 0:
             return default
         return str(matching_param_list[0])
-    
+
     def extend_timeout(self, timeout_extension):
         dp.action_set_timeout(self.uinfo, timeout_extension)
-        
+
     def proc_run_outputfun(self, command, timeout, outputfun):
         self.debug("run_outputfun '" + str(" ".join(command)))
         proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True)
         self.debug("run_outputfun, going in")
         fd = proc.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
@@ -82,7 +83,8 @@ class BaseOp(object):
                 proc = subprocess.Popen(command,
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+                                        stderr=subprocess.PIPE,
+                                        universal_newlines=True)
                 (stdoutdata, stderrdata) = proc.communicate(input=stdin_str)
                 self.debug("run finished, output len=" + str(len(stdoutdata))
                              + ", err len=" + str(len(stderrdata)))
