@@ -2,7 +2,12 @@
 YANG_DIR="$1"
 NAME="$2"
 NED_DIR="$3"
-echo PATH=$NCS_DIR/bin:$PATH ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java
-PATH=$NCS_DIR/bin:$PATH ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java
+NO_PYTHON="--no-python"
+if [ `$NCS_DIR/bin/ncs --version|head -c 1` -le 4 ]; then
+  # Not supported in NSO 4.x and lower
+  NO_PYTHON=""
+fi
+echo PATH=$NCS_DIR/bin:$PATH ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java $NO_PYTHON
+PATH=$NCS_DIR/bin:$PATH ncs-make-package --verbose --netconf-ned "$YANG_DIR" "$NAME" --dest "$NED_DIR" --no-java $NO_PYTHON
 echo make clean fxs -C "$3/src" NCSC="$NCS_DIR/bin/ncsc --verbose"
 make clean fxs -C "$3/src" NCSC="$NCS_DIR/bin/ncsc --verbose" && touch "$NED_DIR"
