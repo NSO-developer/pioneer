@@ -102,6 +102,7 @@ class DownloadOp(YangOp):
                 xml_module = self.nc_perform('get-schema', method_opts=[str(modname)])
             except Exception as e:
                 self.progress_msg("-- download failed\n")
+                self.debug(traceback.format_exc())
                 result_str += "Failed {0} fetch error '{1}'\n".format(modname, repr(e))
                 failed_count += 1
             else:

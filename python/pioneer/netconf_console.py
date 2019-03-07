@@ -103,7 +103,7 @@ class NetconfSSHLikeTransport(object):
 
     def send(self, request):
         if self.framing == FRAMING_1_1:
-            self._send('\n#%d\n' % len(request) + request)
+            self._send('\n#{}\n{}'.format(len(request), str_data(request)))
         else:
             self._send(request)
 
@@ -208,12 +208,8 @@ class NetconfSSHLikeTransport(object):
             return (1, bytes[:sz])
 
     def recv_chunk(self, timeout=None):
-        (flag, rv) = self.recv_chunk_bytes(timeout=timeout)
-        #decode in python 2.7 is slow for large data
-        #(and needed only for python 3)
-        if sys.hexversion > 0x03000000:
-            rv = rv.decode()
-        return (flag, rv)
+        (flag, bytes) = self.recv_chunk_bytes(timeout=timeout)
+        return (flag, str_data(bytes))
 
     def recv_msg(self, timeout=None):
         msg = ""
@@ -384,16 +380,13 @@ class NetconfTCP(NetconfSSHLikeTransport):
     def connect(self):
         self.sock = self.create_connection(self.hostname, self.port)
         sockname = self.sock.getsockname()
-        self.sock.send(
-            "[{};{};tcp;{};{};{};{};{};]\n".format(self.username, sockname[0],
-                                                   os.getuid(), os.getgid(),
-                                                   self.suplgids,
-                                                   os.getenv("HOME", "/tmp"),
-                                                   self.groups).encode())
+        self._send('[{};{};tcp;{};{};{};{};{};]\n'.format(
+            self.username, sockname[0], os.getuid(), os.getgid(),
+            self.suplgids, os.getenv("HOME", "/tmp"), self.groups))
 
     def _send(self, buf):
         try:
-            self.sock.send(buf.encode())
+            self.sock.send(bin_data(buf))
         except socket.error as x:
             self.iocb.output_err('socket error: %s' % (str(x), ))
 
@@ -422,9 +415,23 @@ class HelpFormatterWithLineBreaks(IndentedHelpFormatter):
                result += self._format_text(paragraph) + "\n"
         return result
 
+def bin_data(buf):
+    if sys.hexversion >= 0x03000000 and isinstance(buf, str):
+        return buf.encode('utf-8')
+    return buf
+
+
+def str_data(buf):
+    if sys.hexversion >= 0x03000000 and isinstance(buf, bytes):
+        return buf.decode('utf-8')
+    return buf
+
 def write_fd(iocb, fd, data):
     try:
-        fd.write(data)
+        if fd == sys.stdout:
+            fd.write(str_data(data))
+        else:
+            fd.write(bin_data(data))
     except:
         iocb.abort("Problem with xmllint executable. Is it in PATH?")
 
@@ -1029,13 +1036,13 @@ def main(sys_args, iocb, logger=None):
                                      stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE)
-                forward_fun = lambda chunk: write_fd(iocb, p.stdin, chunk.encode())
+                forward_fun = lambda chunk: write_fd(iocb, p.stdin, chunk)
                 p.stderr.close()
                 output_thread = OutputThread(iocb, p.stdout)
                 output_thread.start()
             else:
                 p = os.popen(xmllint + " 2>/dev/null", 'w')
-                forward_fun = lambda chunk: write_fd(iocb, p, chunk.encode())
+                forward_fun = lambda chunk: write_fd(iocb, p, chunk)
 
         else:
             forward_fun = iocb.output
