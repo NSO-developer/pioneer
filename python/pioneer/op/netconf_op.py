@@ -196,8 +196,12 @@ class NetconfOp(base_op.BaseOp):
         netconf_console.main(args, iocb, self)
         self.debug("Returned from netconf_console")
 
-        xml_get_result = iocb.out.getvalue().decode()
-        stderr = iocb.err.getvalue().decode()
+        if sys.hexversion >= 0x03000000:
+            xml_get_result = iocb.out.getvalue().decode()
+            stderr = iocb.err.getvalue().decode()
+        else:
+            xml_get_result = iocb.out.getvalue()
+            stderr = iocb.err.getvalue()
 
         self.debug("Fetched:\n" + xml_get_result + "\n\n" + stderr)
         if stderr != "":
